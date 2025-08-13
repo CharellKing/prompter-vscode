@@ -1,0 +1,122 @@
+{
+  "name": "prompter-vscode",
+  "displayName": "Prompter - Code Runner",
+  "description": "A VSCode extension for editing and running code snippets, similar to Jupyter notebooks",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:prompter.createNotebook",
+    "onCommand:prompter.runCell",
+    "onCommand:prompter.createPromptCell",
+    "onLanguage:prompter",
+    "onLanguage:prompt",
+    "onNotebook:prompter-notebook"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "prompter.createNotebook",
+        "title": "Create New Prompter Notebook",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.runCell",
+        "title": "Run Cell",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.runAllCells",
+        "title": "Run All Cells",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.createPromptCell",
+        "title": "Create Prompt Cell",
+        "category": "Prompter",
+        "icon": "$(comment-discussion)"
+      }
+    ],
+    "languages": [
+      {
+        "id": "prompter",
+        "aliases": ["Prompter", "prompter"],
+        "extensions": [".ppnb"],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "prompt",
+        "aliases": ["Prompt", "prompt", "AI Prompt"],
+        "extensions": [],
+        "configuration": "./prompt-language-configuration.json",
+        "mimetypes": ["text/x-prompt"]
+       }
+     ],
+     "grammars": [
+        {
+          "language": "prompter",
+          "scopeName": "source.prompter",
+          "path": "./syntaxes/prompter.tmLanguage.json"
+        },
+        {
+          "language": "prompt",
+          "scopeName": "text.prompt",
+          "path": "./syntaxes/prompt.tmLanguage.json"
+        }
+       ],
+      "keybindings": [
+      {
+        "command": "prompter.runCell",
+        "key": "ctrl+enter",
+        "when": "editorTextFocus && resourceExtname == '.ppnb'"
+      },
+      {
+        "command": "prompter.runAllCells",
+        "key": "ctrl+shift+enter",
+        "when": "editorTextFocus && resourceExtname == '.ppnb'"
+      }
+    ],
+    "notebooks": [
+      {
+        "type": "prompter-notebook",
+        "displayName": "Prompter Notebook",
+        "selector": [
+          {
+            "filenamePattern": "*.ppnb"
+          }
+        ]
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceExtname == '.ppnb'",
+          "command": "prompter.runCell",
+          "group": "prompter"
+        }
+      ],
+      "notebook/toolbar": [
+        {
+          "command": "prompter.createPromptCell",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "navigation@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  }
+}
