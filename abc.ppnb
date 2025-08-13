@@ -1,0 +1,114 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "id": "intro-cell",
+      "metadata": {},
+      "source": [
+        "# Prompter VSCode Extension\n",
+        "\n",
+        "Welcome to the Prompter extension! This extension allows you to create interactive notebooks with multiple programming languages.\n",
+        "\n",
+        "## Features\n",
+        "\n",
+        "- **Multi-language support**: Write code in JavaScript, Python, Bash, and more\n",
+        "- **Interactive execution**: Run code cells individually with Ctrl+Enter\n",
+        "- **Real-time output**: See results immediately in the output area\n",
+        "- **Syntax highlighting**: Full syntax highlighting for all supported languages"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "id": "js-example",
+      "metadata": {},
+      "source": [
+        "// JavaScript Example\n",
+        "console.log('Hello from JavaScript!');\n",
+        "\n",
+        "// You can use modern JavaScript features\n",
+        "const greeting = (name) => `Hello, ${name}!`;\n",
+        "console.log(greeting('World'));"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "id": "python-intro",
+      "metadata": {},
+      "source": [
+        "## Python Example\n",
+        "\n",
+        "Here's how you can write Python code:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "id": "python-example",
+      "metadata": {},
+      "source": [
+        "# Python Example\n",
+        "print('Hello from Python!')\n",
+        "\n",
+        "# List comprehension example\n",
+        "numbers = [1, 2, 3, 4, 5]\n",
+        "squares = [x**2 for x in numbers]\n",
+        "print(f'Squares: {squares}')"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "id": "bash-intro",
+      "metadata": {},
+      "source": [
+        "## Bash Example\n",
+        "\n",
+        "You can also run shell commands:"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "id": "bash-example",
+      "metadata": {},
+      "source": [
+        "# Bash Example\n",
+        "echo \"Hello from Bash!\"\n",
+        "\n",
+        "# List current directory\n",
+        "ls -la"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "id": "usage-instructions",
+      "metadata": {},
+      "source": [
+        "## Usage Instructions\n",
+        "\n",
+        "1. **Create a new cell**: Use the + button in the toolbar\n",
+        "2. **Change cell type**: Click on the language selector\n",
+        "3. **Run a cell**: Press Ctrl+Enter or click the run button\n",
+        "4. **Edit cells**: Click on any cell to start editing\n",
+        "\n",
+        "Enjoy coding with Prompter!"
+      ]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Multi-Language",
+      "language": "multi",
+      "name": "prompter"
+    },
+    "language_info": {
+      "name": "multi",
+      "version": "1.0.0"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
