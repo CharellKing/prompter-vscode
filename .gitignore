@@ -75,3 +75,5 @@ Thumbs.db
 # Test files (optional - remove if you want to track test files)
 # test-*.ppnb
 # *.test.js
+
+*.ppnb

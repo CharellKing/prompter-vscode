@@ -1,6 +1,6 @@
 {
     "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-    "name": "Prompt",
+    "name": "prompt",
     "scopeName": "text.prompt",
     "patterns": [
         {
@@ -10,43 +10,6 @@
     "repository": {
         "prompt-content": {
             "patterns": [
-                {
-                    "name": "markup.heading.prompt",
-                    "match": "^#{1,6}\\s+.*$"
-                },
-                {
-                    "name": "markup.bold.prompt",
-                    "match": "\\*\\*[^*]+\\*\\*"
-                },
-                {
-                    "name": "markup.italic.prompt",
-                    "match": "\\*[^*]+\\*"
-                },
-                {
-                    "name": "markup.list.prompt",
-                    "match": "^\\s*[-*+]\\s+.*$"
-                },
-                {
-                    "name": "markup.list.numbered.prompt",
-                    "match": "^\\s*\\d+\\.\\s+.*$"
-                },
-                {
-                    "name": "markup.quote.prompt",
-                    "match": "^>\\s+.*$"
-                },
-                {
-                    "name": "markup.raw.inline.prompt",
-                    "match": "`[^`]+`"
-                },
-                {
-                    "name": "markup.raw.block.prompt",
-                    "begin": "```",
-                    "end": "```"
-                },
-                {
-                    "name": "string.other.link.prompt",
-                    "match": "https?://[^\\s]+"
-                }
             ]
         }
     }

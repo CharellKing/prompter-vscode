@@ -69,14 +69,9 @@ export function activate(context: vscode.ExtensionContext) {
         // 创建符合新格式的notebook数据
         const cells = [
             new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Markup,
-                '# Welcome to Prompter!\n\nThis is a new Prompter notebook. You can create code and markdown cells to build interactive documents.',
-                'markdown'
-            ),
-            new vscode.NotebookCellData(
                 vscode.NotebookCellKind.Code,
-                '// Welcome to Prompter!\n// Press Ctrl+Enter to run this cell\nconsole.log("Hello, World!");',
-                'javascript'
+                '# Welcome to Prompter!\n\nThis is a new Prompter notebook. You can create code and markdown cells to build interactive documents.',
+                'prompt'
             )
         ];
         
@@ -88,17 +83,17 @@ export function activate(context: vscode.ExtensionContext) {
         });
         
         const notebookData = new vscode.NotebookData(cells);
-        notebookData.metadata = {
-            kernelspec: {
-                display_name: "Multi-Language",
-                language: "multi",
-                name: "prompter"
-            },
-            language_info: {
-                name: "multi",
-                version: "1.0.0"
-            }
-        };
+        // notebookData.metadata = {
+        //     kernelspec: {
+        //         display_name: "Multi-Language",
+        //         language: "multi",
+        //         name: "prompter"
+        //     },
+        //     language_info: {
+        //         name: "multi",
+        //         version: "1.0.0"
+        //     }
+        // };
         
         const doc = await vscode.workspace.openNotebookDocument('prompter-notebook', notebookData);
         await vscode.window.showNotebookDocument(doc);
@@ -126,15 +121,22 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     // 添加创建提示词cell的命令
-    const createPromptCellCommand = vscode.commands.registerCommand('prompter.createPromptCell', async () => {
+    const createPromptCellCommand = vscode.commands.registerCommand('prompter.createPromptCell', async (cellUri?: vscode.Uri, cellIndex?: number) => {
         const editor = vscode.window.activeNotebookEditor;
         if (editor) {
             const notebook = editor.notebook;
-            const activeCell = editor.selection.start;
+            let insertIndex: number;
+            
+            // 如果提供了cellIndex参数，使用它；否则使用当前选中的cell
+            if (typeof cellIndex === 'number') {
+                insertIndex = cellIndex + 1;
+            } else {
+                insertIndex = editor.selection.start + 1;
+            }
             
             // 创建新的提示词cell
             const newCell = new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Markup,
+                vscode.NotebookCellKind.Code,
                 '请在此输入您的提示词内容...',
                 'prompt'
             );
@@ -143,19 +145,99 @@ export function activate(context: vscode.ExtensionContext) {
                 cellType: 'prompt'
             };
             
-            // 在当前选中cell后插入新cell
+            // 在指定位置插入新cell
             const edit = new vscode.WorkspaceEdit();
-            const nbEdit = vscode.NotebookEdit.insertCells(activeCell + 1, [newCell]);
+            const nbEdit = vscode.NotebookEdit.insertCells(insertIndex, [newCell]);
             edit.set(notebook.uri, [nbEdit]);
             await vscode.workspace.applyEdit(edit);
+            
+            // 选中新创建的cell
+            const newSelection = new vscode.NotebookRange(insertIndex, insertIndex + 1);
+            editor.selection = newSelection;
+        }
+    });
+
+    // 添加在cell上方创建提示词cell的命令
+    const createPromptCellAboveCommand = vscode.commands.registerCommand('prompter.createPromptCellAbove', async (cellUri?: vscode.Uri, cellIndex?: number) => {
+        const editor = vscode.window.activeNotebookEditor;
+        if (editor) {
+            const notebook = editor.notebook;
+            let insertIndex: number;
+            
+            // 如果提供了cellIndex参数，使用它；否则使用当前选中的cell
+            if (typeof cellIndex === 'number') {
+                insertIndex = cellIndex;
+            } else {
+                insertIndex = editor.selection.start;
+            }
+            
+            // 创建新的提示词cell
+            const newCell = new vscode.NotebookCellData(
+                vscode.NotebookCellKind.Code,
+                '请在此输入您的提示词内容...',
+                'prompt'
+            );
+            newCell.metadata = {
+                id: `prompt-cell-${Date.now()}`,
+                cellType: 'prompt'
+            };
+            
+            // 在指定位置插入新cell
+            const edit = new vscode.WorkspaceEdit();
+            const nbEdit = vscode.NotebookEdit.insertCells(insertIndex, [newCell]);
+            edit.set(notebook.uri, [nbEdit]);
+            await vscode.workspace.applyEdit(edit);
+            
+            // 选中新创建的cell
+            const newSelection = new vscode.NotebookRange(insertIndex, insertIndex + 1);
+            editor.selection = newSelection;
+        }
+    });
+
+    // 添加在cell下方创建提示词cell的命令
+    const createPromptCellBelowCommand = vscode.commands.registerCommand('prompter.createPromptCellBelow', async (cellUri?: vscode.Uri, cellIndex?: number) => {
+        const editor = vscode.window.activeNotebookEditor;
+        if (editor) {
+            const notebook = editor.notebook;
+            let insertIndex: number;
+            
+            // 如果提供了cellIndex参数，使用它；否则使用当前选中的cell
+            if (typeof cellIndex === 'number') {
+                insertIndex = cellIndex + 1;
+            } else {
+                insertIndex = editor.selection.start + 1;
+            }
+            
+            // 创建新的提示词cell
+            const newCell = new vscode.NotebookCellData(
+                vscode.NotebookCellKind.Code,
+                '请在此输入您的提示词内容...',
+                'prompt'
+            );
+            newCell.metadata = {
+                id: `prompt-cell-${Date.now()}`,
+                cellType: 'prompt'
+            };
+            
+            // 在指定位置插入新cell
+            const edit = new vscode.WorkspaceEdit();
+            const nbEdit = vscode.NotebookEdit.insertCells(insertIndex, [newCell]);
+            edit.set(notebook.uri, [nbEdit]);
+            await vscode.workspace.applyEdit(edit);
+            
+            // 选中新创建的cell
+            const newSelection = new vscode.NotebookRange(insertIndex, insertIndex + 1);
+            editor.selection = newSelection;
         }
     });
 
     context.subscriptions.push(
+        createPromptCellCommand,
+        createPromptCellAboveCommand,
+        createPromptCellBelowCommand,
         createNotebookCommand,
         runCellCommand,
         runAllCellsCommand,
-        createPromptCellCommand
     );
 
     // 注册状态栏项
