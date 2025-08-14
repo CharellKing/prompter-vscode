@@ -75,7 +75,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                     cellKind = vscode.NotebookCellKind.Markup;
                     language = 'markdown';
                 } else if (cell.cell_type === 'prompt') {
-                    cellKind = vscode.NotebookCellKind.Markup;
+                    cellKind = vscode.NotebookCellKind.Code;
                     language = 'prompt';
                 } else {
                     cellKind = vscode.NotebookCellKind.Code;
