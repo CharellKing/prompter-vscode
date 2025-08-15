@@ -8,6 +8,7 @@ interface PPNBCell {
         [key: string]: any;
     };
     source: string[];
+    language?: string; // 添加语言字段
     outputs?: any[];
     execution_count?: number | null;
 }
@@ -113,7 +114,8 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                     language = 'prompt';
                 } else {
                     cellKind = vscode.NotebookCellKind.Code;
-                    language = notebook?.metadata?.language_info?.name || 'javascript';
+                    // 优先使用保存的语言信息，否则使用默认值
+                    language = cell.language || notebook?.metadata?.language_info?.name || 'javascript';
                 }
 
                 const cellData = new vscode.NotebookCellData(
@@ -182,6 +184,11 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 metadata: { ...cell.metadata },
                 source: this.stringToSource(cell.value)
             };
+
+            // 为代码单元格保存语言信息
+            if (cellType === 'code') {
+                ppnbCell.language = cell.languageId;
+            }
 
             if (cellType === 'code' || cellType === 'prompt') {
                 ppnbCell.execution_count = null;

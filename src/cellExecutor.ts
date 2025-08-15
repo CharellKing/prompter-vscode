@@ -49,36 +49,48 @@ export class CellExecutor {
     }
 
     async executeCell(cell: vscode.NotebookCell): Promise<void> {
+        console.log(`Executing cell ${cell.index} with language: ${cell.document.languageId}`);
+        
         if (cell.kind !== vscode.NotebookCellKind.Code) {
+            console.log('Skipping non-code cell');
             return;
         }
 
-        const code = cell.document.getText();
+        const code = cell.document.getText().trim();
         const language = cell.document.languageId;
 
-        // 不清除之前的输出，直接执行
+        if (!code) {
+            console.log('Skipping empty cell');
+            return;
+        }
+
+        console.log(`Cell content: ${code.substring(0, 100)}...`);
+
         try {
             // 如果是prompt语言，调用LLM API
-            if (language === 'prompt') {
+            if (language === 'prompt' || cell.metadata?.customCellKind === PrompterCellKind.Prompt) {
+                console.log('Calling LLM API for prompt cell');
                 const response = await this.callLLM(code);
                 await this.updateCellOutput(cell, response, '', 0);
             } else {
                 // 其他语言执行代码
+                console.log(`Running code for language: ${language}`);
                 const result = await this.runCode(code, language);
                 await this.updateCellOutput(cell, result.stdout, result.stderr, result.exitCode);
             }
         } catch (error) {
+            console.error('Cell execution error:', error);
             // 创建错误输出单元格，类似于VS Code Jupyter
             const errorMessage = error instanceof Error ? error.message : String(error);
             
             // 1. 更新当前单元格，显示执行状态
-            await this.updateCellOutput(cell, '', '', 1);
-            
-            // 2. 创建一个新的错误输出单元格
-            await this.createErrorOutputCell(cell, errorMessage);
+            await this.updateCellOutput(cell, '', errorMessage, 1);
             
             // 记录到输出通道
             this.outputChannel.appendLine(`Error executing cell ${cell.index + 1}: ${errorMessage}`);
+            
+            // 抛出错误让controller处理
+            throw error;
         }
     }
     
