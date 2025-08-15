@@ -16,14 +16,83 @@
     "onCommand:prompter.createPromptCellAbove",
     "onCommand:prompter.createPromptCellBelow",
     "onLanguage:prompt",
-    "onNotebook:prompter-notebook"
-   ],
-   "main": "./out/extension.js",
+    "onNotebook:prompter-notebook",
+    "onCommand:prompter.saveNotebook",
+    "onCommand:prompter.configureLLM",
+    "onCommand:prompter.openLLMConfig"
+  ],
+  "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Prompter",
+      "properties": {
+        "prompter.llmProvider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "deepseek",
+            "qwen",
+            "anthropic",
+            "gemini",
+            "mistral"
+          ],
+          "default": "openai",
+          "description": "LLM provider to use for prompt cells"
+        },
+        "prompter.llmModel": {
+          "type": "string",
+          "default": "gpt-3.5-turbo",
+          "description": "LLM model to use for prompt cells"
+        },
+        "prompter.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API Key"
+        },
+        "prompter.deepseekApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Deepseek API Key"
+        },
+        "prompter.qwenApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Qwen API Key"
+        },
+        "prompter.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API Key"
+        },
+        "prompter.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Google Gemini API Key"
+        },
+        "prompter.mistralApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Mistral API Key"
+        },
+        "prompter.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Temperature for LLM responses (0-2)"
+        },
+        "prompter.maxTokens": {
+          "type": "number",
+          "default": 1000,
+          "minimum": 1,
+          "description": "Maximum tokens for LLM responses"
+        }
+      }
+    },
     "commands": [
       {
         "command": "prompter.createPromptCell",
-        "title": "Create Prompt Cell",
+        "title": "Prompt",
         "category": "Prompter",
         "icon": "$(add)"
       },
@@ -53,36 +122,78 @@
         "command": "prompter.runAllCells",
         "title": "Run All Cells",
         "category": "Prompter"
+      },
+      {
+        "command": "prompter.setProvider",
+        "title": "Set LLM Provider",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.setApiKey",
+        "title": "Set API Key for Current Provider",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.setModel",
+        "title": "Set LLM Model",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.saveNotebook",
+        "title": "Save Notebook",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.configureLLM",
+        "title": "Configure LLM Settings",
+        "category": "Prompter"
+      },
+      {
+        "command": "prompter.openLLMConfig",
+        "title": "Open LLM Configuration Page",
+        "category": "Prompter",
+        "icon": "$(settings-gear)"
       }
-     ],
-     "languages": [
+    ],
+    "languages": [
       {
         "id": "prompter",
-        "aliases": ["Prompter", "prompter"],
-        "extensions": [".ppnb"],
+        "aliases": [
+          "Prompter",
+          "prompter"
+        ],
+        "extensions": [
+          ".ppnb"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "prompt",
-        "aliases": ["Prompt", "prompt", "AI Prompt"],
+        "aliases": [
+          "Prompt",
+          "prompt",
+          "AI Prompt"
+        ],
         "extensions": [],
         "configuration": "./prompt-language-configuration.json",
-        "mimetypes": ["text/x-prompt"]
-       }
-     ],
-     "grammars": [
-        {
-          "language": "prompter",
-          "scopeName": "source.prompter",
-          "path": "./syntaxes/prompter.tmLanguage.json"
-        },
-        {
-          "language": "prompt",
-          "scopeName": "text.prompt",
-          "path": "./syntaxes/prompt.tmLanguage.json"
-        }
-       ],
-      "keybindings": [
+        "mimetypes": [
+          "text/x-prompt"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "prompter",
+        "scopeName": "source.prompter",
+        "path": "./syntaxes/prompter.tmLanguage.json"
+      },
+      {
+        "language": "prompt",
+        "scopeName": "text.prompt",
+        "path": "./syntaxes/prompt.tmLanguage.json"
+      }
+    ],
+    "keybindings": [
       {
         "command": "prompter.runCell",
         "key": "ctrl+enter",
@@ -117,19 +228,12 @@
         {
           "command": "prompter.createPromptCell",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "navigation/add@-1"
-        }
-      ],
-      "notebook/cell/title": [
-        {
-          "command": "prompter.createPromptCellAbove",
-          "when": "notebookType == 'prompter-notebook'",
-          "group": "inline@1"
+          "group": "navigation/add"
         },
         {
-          "command": "prompter.createPromptCellBelow",
+          "command": "prompter.openLLMConfig",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "inline@2"
+          "group": "navigation/config"
         }
       ]
     }
@@ -140,8 +244,13 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
+    "@types/axios": "^0.9.36",
+    "@types/form-data": "^2.2.1",
     "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
     "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "axios": "^1.11.0"
   }
 }
