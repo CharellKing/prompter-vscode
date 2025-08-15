@@ -51,6 +51,40 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
         });
     }
 
+    // 将保存文件中的输出转换为 VS Code Notebook 输出对象
+    private toNotebookOutputs(outputs: any[]): vscode.NotebookCellOutput[] {
+        try {
+            return outputs.map((out: any) => {
+                const data = out?.data || {};
+                const items: vscode.NotebookCellOutputItem[] = [];
+                for (const mime of Object.keys(data)) {
+                    const value = data[mime];
+                    let text: string;
+                    if (typeof value === 'string') {
+                        text = value;
+                    } else {
+                        try {
+                            text = JSON.stringify(value);
+                        } catch {
+                            text = String(value);
+                        }
+                    }
+                    if (mime === 'application/vnd.code.notebook.error') {
+                        items.push(vscode.NotebookCellOutputItem.error(new Error(text)));
+                    } else {
+                        items.push(vscode.NotebookCellOutputItem.text(text, mime));
+                    }
+                }
+                if (items.length === 0) {
+                    items.push(vscode.NotebookCellOutputItem.text('', 'text/plain'));
+                }
+                return new vscode.NotebookCellOutput(items);
+            });
+        } catch {
+            return [];
+        }
+    }
+
     async deserializeNotebook(
         content: Uint8Array,
         _token: vscode.CancellationToken
@@ -90,12 +124,16 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
 
                 cellData.metadata = {
                     id: cell.id,
-                    cellType: cell.cell_type === 'prompt' ? 'prompt' : undefined,
+                    customCellKind: cell.cell_type === 'prompt' ? 'prompt' : undefined,
                     ...cell.metadata
                 };
 
-                if (cell.outputs) {
-                    cellData.outputs = cell.outputs;
+                if (cell.outputs && Array.isArray(cell.outputs) && cell.outputs.length > 0) {
+                    try {
+                        cellData.outputs = this.toNotebookOutputs(cell.outputs);
+                    } catch {
+                        cellData.outputs = [];
+                    }
                 }
 
                 return cellData;
@@ -121,13 +159,19 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
         data: vscode.NotebookData,
         _token: vscode.CancellationToken
     ): Promise<Uint8Array> {
-        const cells: PPNBCell[] = data.cells.map(cell => {
+        const cellArray = Array.isArray(data.cells) ? data.cells : [];
+        const cells: PPNBCell[] = cellArray.map(cell => {
             let cellType: 'code' | 'markdown' | 'prompt';
             
-            if (cell.kind === vscode.NotebookCellKind.Code) {
-                cellType = 'code';
-            } else if (cell.metadata?.cellType === 'prompt') {
+            // Determine cell type based on customCellKind metadata or fallback to built-in kind
+            if (cell.metadata?.customCellKind === 'prompt') {
                 cellType = 'prompt';
+            } else if (cell.metadata?.customCellKind === 'output') {
+                cellType = 'code'; // Output cells are stored as code cells
+            } else if (cell.metadata?.customCellKind === 'error') {
+                cellType = 'markdown'; // Error cells are stored as markdown cells
+            } else if (cell.kind === vscode.NotebookCellKind.Code) {
+                cellType = 'code';
             } else {
                 cellType = 'markdown';
             }
@@ -139,9 +183,32 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 source: this.stringToSource(cell.value)
             };
 
-            if (cellType === 'code') {
+            if (cellType === 'code' || cellType === 'prompt') {
                 ppnbCell.execution_count = null;
-                ppnbCell.outputs = cell.outputs || [];
+                
+                // Properly handle outputs
+                if (cell.outputs && cell.outputs.length > 0) {
+                    ppnbCell.outputs = cell.outputs.map(output => {
+                        // Convert each output item to the expected format
+                        return {
+                            output_type: 'execute_result',
+                            data: (output.items ?? []).reduce((data: any, item) => {
+                                // Safely decode the output data
+                                try {
+                                    data[item.mime] = new TextDecoder().decode(item.data);
+                                } catch (e) {
+                                    // If decoding fails, use an empty string
+                                    data[item.mime] = '';
+                                }
+                                return data;
+                            }, {}),
+                            metadata: {},
+                            execution_count: null
+                        };
+                    });
+                } else {
+                    ppnbCell.outputs = [];
+                }
             }
 
             // 移除id从metadata中，因为它已经是顶级属性
@@ -162,7 +229,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                     name: "multi",
                     version: "1.0.0"
                 },
-                ...data.metadata
+                ...(data.metadata || {})
             },
             nbformat: 4,
             nbformat_minor: 5
