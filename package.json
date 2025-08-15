@@ -298,9 +298,14 @@
       ],
       "notebook/toolbar": [
         {
-          "command": "prompter.openLLMConfig",
+          "command": "prompter.createPromptCell",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "navigation/config"
+          "group": "navigation/add"
+        },
+        {
+          "command": "prompter.createCodeCell",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "navigation/add"
         }
       ],
       "notebook/cell/title": [
