@@ -29,24 +29,32 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.workspace.registerNotebookSerializer('prompter-notebook', notebookProvider)
     );
 
+    // Function to get current LLM display name (only model name)
+    function getCurrentLLMDisplayName(): string {
+        const config = vscode.workspace.getConfiguration('prompter');
+        const model = config.get<string>('llmModel') || 'gpt-3.5-turbo';
+        return model;
+    }
+
     // 注册notebook controller来处理prompt cell的语言显示
     const controller = vscode.notebooks.createNotebookController(
         'prompter-controller',
         'prompter-notebook',
-        'Prompter Controller'
+        getCurrentLLMDisplayName()
     );
-    controller.supportedLanguages = ['javascript', 'python', 'typescript', 'bash', 'powershell', 'markdown', 'prompt'];
+    controller.supportedLanguages = ['prompt'];
     controller.supportsExecutionOrder = true;
-    controller.description = 'Prompter notebook controller with support for prompt cells';
+    controller.description = 'Click to open LLM settings';
     
-    // Hide default Code and Markdown buttons
-    vscode.workspace.onDidOpenNotebookDocument(notebook => {
-        if (notebook.notebookType === 'prompter-notebook') {
-            // This is where we could add additional configuration if needed
-            console.log('Prompter notebook opened, applying custom configuration');
-        }
-    });
-    
+    // Function to update controller label when LLM settings change
+    function updateControllerLabel() {
+        controller.label = getCurrentLLMDisplayName();
+        controller.description = 'Current LLM model for prompt execution';
+    }
+
+    // 创建cell执行器
+    const cellExecutor = new CellExecutor(context);
+
     // 设置执行处理器
     controller.executeHandler = async (cells, _notebook, _controller) => {
         for (const cell of cells) {
@@ -70,16 +78,6 @@ export function activate(context: vscode.ExtensionContext) {
     };
     
     context.subscriptions.push(controller);
-    
-    // 监听notebook选择变化
-    context.subscriptions.push(
-        controller.onDidChangeSelectedNotebooks((e) => {
-            console.log('Notebook selection changed:', e);
-        })
-    );
-
-    // 创建cell执行器
-    const cellExecutor = new CellExecutor(context);
 
     // 创建LLM配置Web视图提供者
     const llmConfigProvider = new LLMConfigWebviewProvider(context);
@@ -513,6 +511,32 @@ const enum PrompterCellKind {
         configureLLMCommand,
         openLLMConfigCommand
     );
+
+    // 注册状态栏项显示当前LLM模型
+    const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
+    
+    function updateLLMStatusBar() {
+        llmStatusBarItem.text = `$(gear) ${getCurrentLLMDisplayName()}`;
+        llmStatusBarItem.command = 'prompter.openLLMConfig';
+        llmStatusBarItem.tooltip = 'Click to configure LLM settings';
+        llmStatusBarItem.show();
+    }
+    
+    // 初始化状态栏
+    updateLLMStatusBar();
+    
+    // 监听配置变化更新状态栏
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration('prompter.llmProvider') || 
+                e.affectsConfiguration('prompter.llmModel')) {
+                updateLLMStatusBar();
+                updateControllerLabel();
+            }
+        })
+    );
+    
+    context.subscriptions.push(llmStatusBarItem);
 
     // 注册状态栏项
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
