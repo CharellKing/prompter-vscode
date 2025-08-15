@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { PrompterNotebookProvider } from './notebookProvider';
 import { CellExecutor } from './cellExecutor';
 import { LLMConfigWebviewProvider } from './configWebview';
+import { v4 as uuidv4 } from 'uuid';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
@@ -42,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
         'prompter-notebook',
         getCurrentLLMDisplayName()
     );
-    controller.supportedLanguages = ['prompt'];
+    controller.supportedLanguages = ['javascript', 'typescript', 'python', 'java', 'csharp', 'cpp', 'c', 'go', 'rust', 'php', 'ruby', 'swift', 'kotlin', 'scala', 'html', 'css', 'json', 'xml', 'yaml', 'markdown', 'bash', 'powershell', 'sql'];
     controller.supportsExecutionOrder = true;
     controller.description = 'Click to open LLM settings';
     
@@ -56,23 +57,43 @@ export function activate(context: vscode.ExtensionContext) {
     const cellExecutor = new CellExecutor(context);
 
     // 设置执行处理器
-    controller.executeHandler = async (cells, _notebook, _controller) => {
+    controller.executeHandler = async (cells, notebook, controller) => {
         for (const cell of cells) {
-            // Check for custom cell kinds first
-            if (cell.metadata?.customCellKind === PrompterCellKind.Prompt) {
-                // Execute prompt cells
-                await cellExecutor.executeCell(cell);
-            } else if (cell.metadata?.customCellKind === PrompterCellKind.Output || 
-                       cell.metadata?.customCellKind === PrompterCellKind.Error) {
-                // Skip execution for output and error cells
-                console.log(`Skipping execution of ${cell.metadata.customCellKind} cell`);
-            } else if (cell.kind === vscode.NotebookCellKind.Code) {
-                // Execute regular code cells
-                await cellExecutor.executeCell(cell);
-            } else if (cell.kind === vscode.NotebookCellKind.Markup && cell.document.languageId === 'prompt') {
-                // For backward compatibility with old prompt cells
-                console.log('Processing legacy prompt cell:', cell.document.getText());
-                await cellExecutor.executeCell(cell);
+            // 创建执行对象
+            const execution = controller.createNotebookCellExecution(cell);
+            execution.start(Date.now());
+            
+            try {
+                // Check for custom cell kinds first
+                if (cell.metadata?.customCellKind === PrompterCellKind.Prompt) {
+                    // Execute prompt cells
+                    console.log('Executing prompt cell:', cell.document.getText().substring(0, 50) + '...');
+                    await cellExecutor.executeCell(cell);
+                } else if (cell.metadata?.customCellKind === PrompterCellKind.Output || 
+                           cell.metadata?.customCellKind === PrompterCellKind.Error) {
+                    // Skip execution for output and error cells
+                    console.log(`Skipping execution of ${cell.metadata.customCellKind} cell`);
+                    execution.end(true, Date.now());
+                    continue;
+                } else if (cell.kind === vscode.NotebookCellKind.Code) {
+                    // Execute regular code cells
+                    console.log('Executing code cell:', cell.document.languageId);
+                    await cellExecutor.executeCell(cell);
+                } else if (cell.kind === vscode.NotebookCellKind.Markup && cell.document.languageId === 'prompt') {
+                    // For backward compatibility with old prompt cells
+                    console.log('Processing legacy prompt cell:', cell.document.getText());
+                    await cellExecutor.executeCell(cell);
+                }
+                
+                execution.end(true, Date.now());
+            } catch (error) {
+                console.error('Cell execution failed:', error);
+                execution.replaceOutput([
+                    new vscode.NotebookCellOutput([
+                        vscode.NotebookCellOutputItem.error(error instanceof Error ? error : new Error(String(error)))
+                    ])
+                ]);
+                execution.end(false, Date.now());
             }
         }
     };
@@ -81,12 +102,26 @@ export function activate(context: vscode.ExtensionContext) {
 
     // 创建LLM配置Web视图提供者
     const llmConfigProvider = new LLMConfigWebviewProvider(context);
+    
+    // 注册webview view provider
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(
+            LLMConfigWebviewProvider.viewType,
+            llmConfigProvider
+        )
+    );
 
     // Auto-save .ppnb notebooks (debounced)
     const pendingSaves = new Map<string, ReturnType<typeof setTimeout>>();
     const AUTO_SAVE_DELAY = 1500;
 
     function scheduleNotebookSave(doc: vscode.NotebookDocument) {
+        // 只对已保存的文件（有文件路径）进行自动保存，跳过未命名文件
+        if (doc.uri.scheme !== 'file') {
+            console.log('Skipping auto-save for untitled notebook:', doc.uri.toString());
+            return;
+        }
+        
         const key = doc.uri.toString();
         const existing = pendingSaves.get(key);
         if (existing) {
@@ -95,17 +130,9 @@ export function activate(context: vscode.ExtensionContext) {
         const handle = setTimeout(async () => {
             pendingSaves.delete(key);
             try {
-                if (doc.uri.scheme === 'file') {
-                    // Save all dirty editors; notebooks included
-                    await vscode.workspace.saveAll(false);
-                } else {
-                    // For Untitled, trigger Save As once
-                    const isActive = vscode.window.activeNotebookEditor?.notebook === doc;
-                    if (!isActive) {
-                        await vscode.window.showNotebookDocument(doc, { preserveFocus: false });
-                    }
-                    await vscode.commands.executeCommand('workbench.action.files.saveAs');
-                }
+                // 只保存已有文件路径的文件
+                await vscode.workspace.saveAll(false);
+                console.log('Auto-saved notebook:', doc.uri.fsPath);
             } catch (err) {
                 console.error('Auto-save failed:', err);
             }
@@ -126,34 +153,32 @@ export function activate(context: vscode.ExtensionContext) {
     const createNotebookCommand = vscode.commands.registerCommand('prompter.createNotebook', async () => {
         const uri = vscode.Uri.parse(`untitled:Untitled-${Date.now()}.ppnb`);
         
+        // 获取默认代码语言
+        const config = vscode.workspace.getConfiguration('prompter');
+        const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
+        
         // 创建符合新格式的notebook数据
         const cells = [
             new vscode.NotebookCellData(
                 vscode.NotebookCellKind.Code,
                 '# Welcome to Prompter!\n\nThis is a new Prompter notebook. You can create code and markdown cells to build interactive documents.',
                 'prompt'
+            ),
+            new vscode.NotebookCellData(
+                vscode.NotebookCellKind.Code,
+                '',
+                defaultLanguage
             )
         ];
         
         // 为每个cell添加ID
         cells.forEach((cell, index) => {
             cell.metadata = {
-                id: `cell-${Date.now()}-${index}`
+                id: `cell-${uuidv4()}`
             };
         });
         
         const notebookData = new vscode.NotebookData(cells);
-        // notebookData.metadata = {
-        //     kernelspec: {
-        //         display_name: "Multi-Language",
-        //         language: "multi",
-        //         name: "prompter"
-        //     },
-        //     language_info: {
-        //         name: "multi",
-        //         version: "1.0.0"
-        //     }
-        // };
         
         const doc = await vscode.workspace.openNotebookDocument('prompter-notebook', notebookData);
         await vscode.window.showNotebookDocument(doc);
@@ -229,7 +254,7 @@ const enum PrompterCellKind {
             
             // 使用元数据标记为自定义的Prompt类型
             newCell.metadata = {
-                id: `prompt-cell-${Date.now()}`,
+                id: `prompt-cell-${uuidv4()}`,
                 customCellKind: PrompterCellKind.Prompt  // 使用自定义单元格类型
             };
             
@@ -266,7 +291,7 @@ const enum PrompterCellKind {
                 'prompt'
             );
             newCell.metadata = {
-                id: `prompt-cell-${Date.now()}`,
+                id: `prompt-cell-${uuidv4()}`,
                 customCellKind: PrompterCellKind.Prompt  // 使用自定义单元格类型
             };
             
@@ -305,6 +330,47 @@ const enum PrompterCellKind {
             newCell.metadata = {
                 id: `prompt-cell-${Date.now()}`,
                 customCellKind: PrompterCellKind.Prompt  // 使用自定义单元格类型
+            };
+            
+            // 在指定位置插入新cell
+            const edit = new vscode.WorkspaceEdit();
+            const nbEdit = vscode.NotebookEdit.insertCells(insertIndex, [newCell]);
+            edit.set(notebook.uri, [nbEdit]);
+            await vscode.workspace.applyEdit(edit);
+            
+            // 选中新创建的cell
+            const newSelection = new vscode.NotebookRange(insertIndex, insertIndex + 1);
+            editor.selection = newSelection;
+        }
+    });
+
+    // 添加创建代码cell的命令（使用默认语言）
+    const createCodeCellCommand = vscode.commands.registerCommand('prompter.createCodeCell', async (cellUri?: vscode.Uri, cellIndex?: number) => {
+        const editor = vscode.window.activeNotebookEditor;
+        if (editor) {
+            const notebook = editor.notebook;
+            let insertIndex: number;
+            
+            // 如果提供了cellIndex参数，使用它；否则使用当前选中的cell
+            if (typeof cellIndex === 'number') {
+                insertIndex = cellIndex + 1;
+            } else {
+                insertIndex = editor.selection.start + 1;
+            }
+            
+            // 获取默认代码语言
+            const config = vscode.workspace.getConfiguration('prompter');
+            const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
+            
+            // 创建新的代码cell
+            const newCell = new vscode.NotebookCellData(
+                vscode.NotebookCellKind.Code,
+                '',
+                defaultLanguage
+            );
+            
+            newCell.metadata = {
+                id: `code-cell-${uuidv4()}`
             };
             
             // 在指定位置插入新cell
@@ -493,14 +559,148 @@ const enum PrompterCellKind {
     });
 
     // 添加打开LLM配置页面的命令
-    const openLLMConfigCommand = vscode.commands.registerCommand('prompter.openLLMConfig', () => {
-        llmConfigProvider.show();
+    const openLLMConfigCommand = vscode.commands.registerCommand('prompter.openLLMConfig', async () => {
+        try {
+            // 先显示面板区域
+            await vscode.commands.executeCommand('workbench.action.togglePanel');
+            // 等待一下确保面板打开
+            await new Promise(resolve => setTimeout(resolve, 100));
+            // 聚焦到Prompter面板
+            await vscode.commands.executeCommand('workbench.view.extension.prompter-panel');
+            // 显示LLM配置视图
+            llmConfigProvider.show();
+        } catch (error) {
+            console.error('Failed to show LLM config panel:', error);
+            // 如果面板命令失败，回退到显示webview提供者
+            llmConfigProvider.show();
+        }
+    });
+
+    // 添加聚焦LLM配置面板的命令
+    const focusLLMConfigCommand = vscode.commands.registerCommand('prompter.llmConfig.focus', async () => {
+        try {
+            // 先显示面板区域
+            await vscode.commands.executeCommand('workbench.action.togglePanel');
+            // 等待一下确保面板打开
+            await new Promise(resolve => setTimeout(resolve, 100));
+            // 聚焦到Prompter面板
+            await vscode.commands.executeCommand('workbench.view.extension.prompter-panel');
+            // 显示LLM配置视图
+            llmConfigProvider.show();
+        } catch (error) {
+            console.error('Failed to focus LLM config panel:', error);
+            llmConfigProvider.show();
+        }
+    });
+
+    // 添加设置默认代码语言的命令
+    const setDefaultCodeLanguageCommand = vscode.commands.registerCommand('prompter.setDefaultCodeLanguage', async () => {
+        const languages = [
+            'javascript', 'typescript', 'python', 'java', 'csharp', 'cpp', 'c', 'go', 'rust',
+            'php', 'ruby', 'swift', 'kotlin', 'scala', 'html', 'css', 'json', 'xml', 'yaml',
+            'markdown', 'bash', 'powershell', 'sql'
+        ];
+        
+        const config = vscode.workspace.getConfiguration('prompter');
+        const currentLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
+        
+        const selectedLanguage = await vscode.window.showQuickPick(languages, {
+            placeHolder: `Select default code language (current: ${currentLanguage})`,
+            ignoreFocusOut: true
+        });
+        
+        if (selectedLanguage) {
+            await config.update('defaultCodeLanguage', selectedLanguage, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(`Default code language set to ${selectedLanguage}`);
+        }
+    });
+
+    // 添加设置cell类型的命令
+    const setCellTypeCommand = vscode.commands.registerCommand('prompter.setCellType', async (cellUri?: vscode.Uri, cellIndex?: number) => {
+        const editor = vscode.window.activeNotebookEditor;
+        if (!editor) {
+            return;
+        }
+
+        let targetCell: vscode.NotebookCell;
+        
+        if (typeof cellIndex === 'number') {
+            targetCell = editor.notebook.cellAt(cellIndex);
+        } else {
+            targetCell = editor.notebook.cellAt(editor.selection.start);
+        }
+
+        if (!targetCell) {
+            return;
+        }
+
+        // 定义可用的cell类型
+        const cellTypes = [
+            { label: '$(code) Code Cell', value: 'code', description: 'Execute code in various languages' },
+            { label: '$(sparkle) Prompt Cell', value: 'prompt', description: 'Send prompts to LLM' },
+            { label: '$(markdown) Markdown Cell', value: 'markdown', description: 'Rich text and documentation' }
+        ];
+
+        const selectedType = await vscode.window.showQuickPick(cellTypes, {
+            placeHolder: 'Select cell type',
+            ignoreFocusOut: true
+        });
+
+        if (!selectedType) {
+            return;
+        }
+
+        // 根据选择的类型设置cell
+        let newCellKind: vscode.NotebookCellKind;
+        let newLanguage: string;
+        let newMetadata: any = { ...targetCell.metadata };
+
+        switch (selectedType.value) {
+            case 'code':
+                newCellKind = vscode.NotebookCellKind.Code;
+                const config = vscode.workspace.getConfiguration('prompter');
+                newLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
+                delete newMetadata.customCellKind;
+                break;
+            case 'prompt':
+                newCellKind = vscode.NotebookCellKind.Code;
+                newLanguage = 'prompt';
+                newMetadata.customCellKind = PrompterCellKind.Prompt;
+                break;
+            case 'markdown':
+                newCellKind = vscode.NotebookCellKind.Markup;
+                newLanguage = 'markdown';
+                delete newMetadata.customCellKind;
+                break;
+            default:
+                return;
+        }
+
+        // 创建新的cell数据
+        const newCellData = new vscode.NotebookCellData(
+            newCellKind,
+            targetCell.document.getText(),
+            newLanguage
+        );
+        newCellData.metadata = newMetadata;
+
+        // 替换cell
+        const edit = new vscode.WorkspaceEdit();
+        const nbEdit = vscode.NotebookEdit.replaceCells(
+            new vscode.NotebookRange(targetCell.index, targetCell.index + 1),
+            [newCellData]
+        );
+        edit.set(editor.notebook.uri, [nbEdit]);
+        await vscode.workspace.applyEdit(edit);
+
+        vscode.window.showInformationMessage(`Cell type changed to ${selectedType.label.replace(/\$\([^)]+\)\s*/, '')}`);
     });
 
     context.subscriptions.push(
         createPromptCellCommand,
         createPromptCellAboveCommand,
         createPromptCellBelowCommand,
+        createCodeCellCommand,
         createNotebookCommand,
         runCellCommand,
         runAllCellsCommand,
@@ -509,21 +709,37 @@ const enum PrompterCellKind {
         setApiKeyCommand,
         setModelCommand,
         configureLLMCommand,
-        openLLMConfigCommand
+        openLLMConfigCommand,
+        focusLLMConfigCommand,
+        setDefaultCodeLanguageCommand,
+        setCellTypeCommand
     );
 
     // 注册状态栏项显示当前LLM模型
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
     
     function updateLLMStatusBar() {
-        llmStatusBarItem.text = `$(gear) ${getCurrentLLMDisplayName()}`;
+        llmStatusBarItem.text = `$(sparkle) ${getCurrentLLMDisplayName()}`;
         llmStatusBarItem.command = 'prompter.openLLMConfig';
         llmStatusBarItem.tooltip = 'Click to configure LLM settings';
         llmStatusBarItem.show();
     }
     
+    // 注册状态栏项显示默认代码语言
+    const codeLanguageStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    
+    function updateCodeLanguageStatusBar() {
+        const config = vscode.workspace.getConfiguration('prompter');
+        const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
+        codeLanguageStatusBarItem.text = `$(code) ${defaultLanguage}`;
+        codeLanguageStatusBarItem.command = 'prompter.setDefaultCodeLanguage';
+        codeLanguageStatusBarItem.tooltip = 'Click to set default code language';
+        codeLanguageStatusBarItem.show();
+    }
+    
     // 初始化状态栏
     updateLLMStatusBar();
+    updateCodeLanguageStatusBar();
     
     // 监听配置变化更新状态栏
     context.subscriptions.push(
@@ -533,10 +749,13 @@ const enum PrompterCellKind {
                 updateLLMStatusBar();
                 updateControllerLabel();
             }
+            if (e.affectsConfiguration('prompter.defaultCodeLanguage')) {
+                updateCodeLanguageStatusBar();
+            }
         })
     );
     
-    context.subscriptions.push(llmStatusBarItem);
+    context.subscriptions.push(llmStatusBarItem, codeLanguageStatusBarItem);
 
     // 注册状态栏项
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
