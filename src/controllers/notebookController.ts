@@ -39,23 +39,9 @@ export function createNotebookController(
             
             try {
                 // Check for custom cell kinds first
-                if (cell.metadata?.customCellKind === PrompterCellKind.Prompt || cell.document.languageId === 'prompt') {
+                if (cell.kind === vscode.NotebookCellKind.Code) {
                     // Execute prompt cells
                     console.log('Executing prompt cell:', cell.document.getText().substring(0, 50) + '...');
-                    await cellExecutor.executeCell(cell);
-                } else if (cell.metadata?.customCellKind === PrompterCellKind.Output || 
-                           cell.metadata?.customCellKind === PrompterCellKind.Error) {
-                    // Skip execution for output and error cells
-                    console.log(`Skipping execution of ${cell.metadata.customCellKind} cell`);
-                    execution.end(true, Date.now());
-                    continue;
-                } else if (cell.kind === vscode.NotebookCellKind.Code) {
-                    // Execute regular code cells
-                    console.log('Executing code cell:', cell.document.languageId);
-                    await cellExecutor.executeCell(cell);
-                } else if (cell.kind === vscode.NotebookCellKind.Markup && cell.document.languageId === 'prompt') {
-                    // For backward compatibility with old prompt cells
-                    console.log('Processing legacy prompt cell:', cell.document.getText());
                     await cellExecutor.executeCell(cell);
                 }
                 

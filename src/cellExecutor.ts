@@ -43,25 +43,25 @@ export class CellExecutor {
      * @param cell The notebook cell to update
      * @param languageMode The language mode to set
      */
-    public updateCellLanguageMode(cell: vscode.NotebookCell, languageMode: string): vscode.NotebookCellData {
+    public updateCellLanguageMode(cell: vscode.NotebookCell): vscode.NotebookCellData {
         const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
         
         // Copy existing metadata
         cellData.metadata = { ...cell.metadata };
         
         // Update cell properties based on language mode
-        if (languageMode === 'prompt') {
+        if (cell.document.languageId === 'prompt') {
             // For prompt language mode
             cellData.kind = vscode.NotebookCellKind.Code;
             cellData.languageId = 'prompt';
-        } else if (languageMode === 'markdown') {
+        } else if (cell.document.languageId === 'markdown') {
             // For markdown language mode
             cellData.kind = vscode.NotebookCellKind.Markup;
             cellData.languageId = 'markdown';
         } else {
             // For all other language modes
             cellData.kind = vscode.NotebookCellKind.Code;
-            cellData.languageId = languageMode;
+            cellData.languageId = cell.document.languageId;
         }
         
         return cellData;
@@ -317,7 +317,7 @@ export class CellExecutor {
      * @param cell The notebook cell to update
      * @param languageMode The language mode to set
      */
-    public async applyLanguageModeChange(cell: vscode.NotebookCell, languageMode: string): Promise<void> {
+    public async applyLanguageModeChange(cell: vscode.NotebookCell): Promise<void> {
         try {
             // Ensure cell index is valid
             if (cell.index < 0) {
@@ -326,7 +326,7 @@ export class CellExecutor {
             }
             
             // Get updated cell data with new language mode
-            const cellData = this.updateCellLanguageMode(cell, languageMode);
+            const cellData = this.updateCellLanguageMode(cell);
             
             // Create and apply the edit
             const edit = new vscode.WorkspaceEdit();
@@ -334,7 +334,7 @@ export class CellExecutor {
             edit.set(cell.notebook.uri, [nbEdit]);
             await vscode.workspace.applyEdit(edit);
             
-            this.outputChannel.appendLine(`Updated cell ${cell.index + 1} language mode to ${languageMode}`);
+            this.outputChannel.appendLine(`Updated cell ${cell.index + 1} language mode to ${cell.document.languageId}`);
         } catch (error) {
             this.outputChannel.appendLine(`Error updating cell language mode: ${error instanceof Error ? error.message : String(error)}`);
         }

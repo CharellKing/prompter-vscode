@@ -23,15 +23,16 @@ import {
     registerSetDefaultCodeLanguageCommand
 } from './commands';
 import {
-    registerCodeCellInterceptor,
-} from './interceptors';
-import {
     createNotebookController,
     updateControllerLabel
 } from './controllers';
 
+// Export the cellExecutor for use in other parts of the extension
+export let cellExecutor: CellExecutor;
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
+
 
     // context.subscriptions.push(
     //     vscode.notebooks.registerNotebookCellStatusBarItemProvider('prompter-notebook', {
@@ -47,9 +48,22 @@ export function activate(context: vscode.ExtensionContext) {
     //     }
     //     })
     // );
-
-    // 注册拦截器 - 只在 prompter-notebook 类型的文档中生效
-    registerCodeCellInterceptor(context);
+    
+    // 监听cell语言变更
+    // context.subscriptions.push(
+    //     vscode.workspace.onDidChangeNotebookDocument(async event => {
+    //         if (event.notebook.notebookType !== 'prompter-notebook') {
+    //             return;
+    //         }
+            
+    //         // 检查每个变更的单元格
+    //         for (const cellChange of event.cellChanges) {                    
+    //                 const cell = cellChange.cell;                    
+    //                 // 使用CellExecutor的applyLanguageModeChange方法来更新单元格
+    //                 await cellExecutor.applyLanguageModeChange(cell);
+    //         }
+    //     })
+    // );
 
     // 注册语言配置
     context.subscriptions.push(
@@ -74,8 +88,8 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.workspace.registerNotebookSerializer('prompter-notebook', notebookProvider)
     );
 
-    // 创建cell执行器
-    const cellExecutor = new CellExecutor(context);
+    // 创建cell执行器并导出
+    cellExecutor = new CellExecutor(context);
 
     // 创建并配置notebook controller
     const controller = createNotebookController(context, cellExecutor);

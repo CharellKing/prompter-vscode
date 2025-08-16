@@ -180,8 +180,15 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
     
     // 注册语言模式变更事件处理
     context.subscriptions.push(
-        vscode.workspace.onDidChangeNotebookDocument(event => {
+        vscode.workspace.onDidChangeNotebookDocument(async event => {
             if (event.notebook.notebookType !== 'prompter-notebook') {
+                return;
+            }
+            
+            // 导入CellExecutor实例
+            const { cellExecutor } = require('../extension');
+            if (!cellExecutor) {
+                console.error('CellExecutor not found in extension exports');
                 return;
             }
             
@@ -197,48 +204,8 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
                     const cell = cellChange.cell;
                     const newLanguageId = cellChange.document.languageId;
                     
-                    // 如果新语言是markdown，则将cellType设置为markdown
-                    if (newLanguageId === 'markdown') {
-                        const newCellData = new vscode.NotebookCellData(
-                            vscode.NotebookCellKind.Markup,
-                            cell.document.getText(),
-                            'markdown'
-                        );
-                        
-                        // 保留原有metadata，但移除customCellKind
-                        const newMetadata = { ...cell.metadata };
-                        delete newMetadata.customCellKind;
-                        newCellData.metadata = newMetadata;
-                        
-                        // 替换cell
-                        const edit = new vscode.WorkspaceEdit();
-                        const nbEdit = vscode.NotebookEdit.replaceCells(
-                            new vscode.NotebookRange(cell.index, cell.index + 1),
-                            [newCellData]
-                        );
-                        edit.set(event.notebook.uri, [nbEdit]);
-                        vscode.workspace.applyEdit(edit);
-                    } 
-                    // 如果从markdown切换到其他语言，则将cellType设置为code
-                    else if (cell.kind === vscode.NotebookCellKind.Markup) {
-                        const newCellData = new vscode.NotebookCellData(
-                            vscode.NotebookCellKind.Code,
-                            cell.document.getText(),
-                            newLanguageId
-                        );
-                        
-                        // 保留原有metadata
-                        newCellData.metadata = { ...cell.metadata };
-                        
-                        // 替换cell
-                        const edit = new vscode.WorkspaceEdit();
-                        const nbEdit = vscode.NotebookEdit.replaceCells(
-                            new vscode.NotebookRange(cell.index, cell.index + 1),
-                            [newCellData]
-                        );
-                        edit.set(event.notebook.uri, [nbEdit]);
-                        vscode.workspace.applyEdit(edit);
-                    }
+                    // 使用CellExecutor的applyLanguageModeChange方法来更新单元格
+                    await cellExecutor.applyLanguageModeChange(cell, newLanguageId);
                 }
             }
         })
