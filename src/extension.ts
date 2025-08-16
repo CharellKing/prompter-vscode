@@ -33,7 +33,7 @@ import {
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
 
-    // 注册拦截器
+    // 注册拦截器 - 只在 prompter-notebook 类型的文档中生效
     registerCodeCellInterceptor(context);
 
     // 注册语言配置
