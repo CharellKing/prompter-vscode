@@ -126,7 +126,6 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
 
                 cellData.metadata = {
                     id: cell.id,
-                    customCellKind: cell.cell_type === 'prompt' ? 'prompt' : undefined,
                     ...cell.metadata
                 };
 
@@ -165,17 +164,12 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
         const cells: PPNBCell[] = cellArray.map(cell => {
             let cellType: 'code' | 'markdown' | 'prompt';
             
-            // Determine cell type based on customCellKind metadata or fallback to built-in kind
-            if (cell.metadata?.customCellKind === 'prompt') {
-                cellType = 'prompt';
-            } else if (cell.metadata?.customCellKind === 'output') {
-                cellType = 'code'; // Output cells are stored as code cells
-            } else if (cell.metadata?.customCellKind === 'error') {
-                cellType = 'markdown'; // Error cells are stored as markdown cells
-            } else if (cell.kind === vscode.NotebookCellKind.Code) {
+            if (cell.languageId === 'prompt') {
                 cellType = 'code';
+            } else if (cell.languageId === 'markdown') {
+                cellType = 'markdown'; // Output cells are stored as code cells
             } else {
-                cellType = 'markdown';
+                cellType = 'code';
             }
             
             const ppnbCell: PPNBCell = {
@@ -190,7 +184,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 ppnbCell.language = cell.languageId;
             }
 
-            if (cellType === 'code' || cellType === 'prompt') {
+            if (cellType === 'code') {
                 ppnbCell.execution_count = null;
                 
                 // Properly handle outputs
