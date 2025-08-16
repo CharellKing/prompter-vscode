@@ -310,11 +310,11 @@
           "group": "inline@1"
         }
       ],
-      "notebook/cell/between": [
-        {
+      "interactive/cell/title": [
+          {
           "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "inline"
+          "group": "cell/insert@1"
         }
       ]
     }
