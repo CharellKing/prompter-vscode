@@ -145,17 +145,14 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
                 newCellKind = vscode.NotebookCellKind.Code;
                 const config = vscode.workspace.getConfiguration('prompter');
                 newLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
-                delete newMetadata.customCellKind;
                 break;
             case 'prompt':
                 newCellKind = vscode.NotebookCellKind.Code;
                 newLanguage = 'prompt';
-                newMetadata.customCellKind = PrompterCellKind.Prompt;
                 break;
             case 'markdown':
                 newCellKind = vscode.NotebookCellKind.Markup;
                 newLanguage = 'markdown';
-                delete newMetadata.customCellKind;
                 break;
             default:
                 return;
