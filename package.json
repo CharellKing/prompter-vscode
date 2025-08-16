@@ -129,7 +129,7 @@
         "command": "prompter.cell.insertPromptCellBelow",
         "title": "Prompt",
         "category": "Prompter",
-        "icon": "$(add)"
+        "icon": "$(comment-discussion)"
       },
       {
         "command": "prompter.cell.insertCodeCellBelow",
@@ -305,16 +305,14 @@
       ],
       "notebook/cell/title": [
         {
-          "command": "prompter.notebook.setCellType",
-          "when": "notebookType == 'prompter-notebook'",
-          "group": "inline@1"
-        }
-      ],
-      "interactive/cell/title": [
-          {
           "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "cell/insert@1"
+          "group": "inline@1"
+        },
+        {
+          "command": "prompter.notebook.setCellType",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "inline@3"
         }
       ]
     }

@@ -19,7 +19,7 @@ export function insertPromptCell(editor: vscode.NotebookEditor, insertIndex: num
     // 创建新的提示词cell
     const newCell = new vscode.NotebookCellData(
         vscode.NotebookCellKind.Code,
-        '请在此输入您的提示词内容...',
+        'Please enter your prompt content here...',
         'prompt'
     );
     

@@ -33,6 +33,21 @@ import {
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
 
+    // context.subscriptions.push(
+    //     vscode.notebooks.registerNotebookCellStatusBarItemProvider('prompter-notebook', {
+    //     provideCellStatusBarItems(cell: vscode.NotebookCell, token: vscode.CancellationToken): vscode.NotebookCellStatusBarItem[] {
+    //         return [
+    //         {
+    //             text: 'Prompt',
+    //             command: 'prompter.cell.insertPromptCellBelow',
+    //             tooltip: 'Insert a new Prompt cell below',
+    //             alignment: vscode.NotebookCellStatusBarAlignment.Left
+    //         }
+    //         ];
+    //     }
+    //     })
+    // );
+
     // 注册拦截器 - 只在 prompter-notebook 类型的文档中生效
     registerCodeCellInterceptor(context);
 
