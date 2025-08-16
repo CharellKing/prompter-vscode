@@ -309,6 +309,13 @@
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@1"
         }
+      ],
+      "notebook/cell/between": [
+        {
+          "command": "prompter.cell.insertPromptCellBelow",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "inline"
+        }
       ]
     }
   },
