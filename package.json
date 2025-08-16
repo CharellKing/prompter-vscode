@@ -284,6 +284,7 @@
           "id": "prompter.llmConfig",
           "name": "LLM Configuration",
           "type": "webview",
+          "icon": "$(sparkle)",
           "when": "true"
         }
       ]
@@ -300,12 +301,12 @@
         {
           "command": "prompter.createPromptCell",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "navigation/add"
+          "group": "navigation/add@-100"
         },
         {
           "command": "prompter.createCodeCell",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "navigation/add"
+          "group": "navigation/add@-99"
         }
       ],
       "notebook/cell/title": [
