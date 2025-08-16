@@ -149,7 +149,7 @@ export function activate(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('prompter');
         const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
         codeLanguageStatusBarItem.text = `$(code) ${defaultLanguage}`;
-        codeLanguageStatusBarItem.command = 'prompter.setDefaultCodeLanguage';
+        codeLanguageStatusBarItem.command = 'prompter.language.setDefaultCodeLanguage';
         codeLanguageStatusBarItem.tooltip = 'Click to set default code language';
         codeLanguageStatusBarItem.show();
     }
