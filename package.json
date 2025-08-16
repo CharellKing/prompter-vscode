@@ -10,16 +10,15 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:prompter.createNotebook",
-    "onCommand:prompter.runCell",
-    "onCommand:prompter.createPromptCell",
-    "onCommand:prompter.createPromptCellAbove",
-    "onCommand:prompter.createPromptCellBelow",
+    "onCommand:prompter.notebook.createNotebook",
+    "onCommand:prompter.notebook.runCell",
+    "onCommand:prompter.cell.insertCodeCellAbove",
+    "onCommand:prompter.cell.insertCodeCellBelow",
     "onLanguage:prompt",
     "onNotebook:prompter-notebook",
-    "onCommand:prompter.saveNotebook",
-    "onCommand:prompter.configureLLM",
-    "onCommand:prompter.openLLMConfig"
+    "onCommand:prompter.notebook.saveNotebook",
+    "onCommand:prompter.llm.configureLLM",
+    "onCommand:prompter.llm.openLLMConfig"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -121,88 +120,88 @@
     },
     "commands": [
       {
-        "command": "prompter.createPromptCell",
+        "command": "prompter.cell.insertPromptCellAbove",
+        "title": "Insert Prompt Cell Above",
+        "category": "Prompter",
+        "icon": "$(add)"
+      },
+      {
+        "command": "prompter.cell.insertPromptCellBelow",
         "title": "Prompt",
         "category": "Prompter",
-        "icon": "$(comment-discussion)"
-      },
-      {
-        "command": "prompter.createPromptCellAbove",
-        "title": "Create Prompt Cell Above",
-        "category": "Prompter",
         "icon": "$(add)"
       },
       {
-        "command": "prompter.createPromptCellBelow",
-        "title": "Create Prompt Cell Below",
-        "category": "Prompter",
-        "icon": "$(add)"
-      },
-      {
-        "command": "prompter.createCodeCell",
+        "command": "prompter.cell.insertCodeCellBelow",
         "title": "Code",
         "category": "Prompter",
         "icon": "$(code)"
       },
       {
-        "command": "prompter.createNotebook",
+        "command": "prompter.cell.insertCodeCellAbove",
+        "title": "Insert Code Cell Above",
+        "category": "Prompter",
+        "icon": "$(add)"
+      },
+      {
+        "command": "prompter.notebook.createNotebook",
         "title": "Create New Prompter Notebook",
         "category": "Prompter"
       },
       {
-        "command": "prompter.runCell",
+        "command": "prompter.notebook.runCell",
         "title": "Run Cell",
         "category": "Prompter"
       },
       {
-        "command": "prompter.runAllCells",
+        "command": "prompter.notebook.runAllCells",
         "title": "Run All Cells",
         "category": "Prompter"
       },
       {
-        "command": "prompter.setProvider",
+        "command": "prompter.llm.setProvider",
         "title": "Set LLM Provider",
         "category": "Prompter"
       },
       {
-        "command": "prompter.setApiKey",
+        "command": "prompter.llm.setApiKey",
         "title": "Set API Key for Current Provider",
         "category": "Prompter"
       },
       {
-        "command": "prompter.setModel",
+        "command": "prompter.llm.setModel",
         "title": "Set LLM Model",
         "category": "Prompter"
       },
       {
-        "command": "prompter.saveNotebook",
+        "command": "prompter.notebook.saveNotebook",
         "title": "Save Notebook",
         "category": "Prompter"
       },
       {
-        "command": "prompter.configureLLM",
+        "command": "prompter.llm.configureLLM",
         "title": "Configure LLM Settings",
         "category": "Prompter"
       },
       {
-        "command": "prompter.openLLMConfig",
+        "command": "prompter.llm.openLLMConfig",
         "title": "Open LLM Configuration Page",
         "category": "Prompter",
         "icon": "$(settings-gear)"
       },
       {
-        "command": "prompter.llmConfig.focus",
+        "command": "prompter.llm.llmConfigFocus",
         "title": "Focus LLM Configuration Panel",
         "category": "Prompter"
       },
       {
-        "command": "prompter.setDefaultCodeLanguage",
+        "command": "prompter.language.setDefaultCodeLanguage",
         "title": "Set Default Code Language",
         "category": "Prompter",
         "icon": "$(code)"
       },
       {
-        "command": "prompter.setCellType",
+        "command": "prompter.notebook.setCellType",
         "title": "Set Cell Type",
         "category": "Prompter",
         "icon": "$(symbol-class)"
@@ -248,12 +247,12 @@
     ],
     "keybindings": [
       {
-        "command": "prompter.runCell",
+        "command": "prompter.notebook.runCell",
         "key": "ctrl+enter",
         "when": "editorTextFocus && resourceExtname == '.ppnb'"
       },
       {
-        "command": "prompter.runAllCells",
+        "command": "prompter.notebook.runAllCells",
         "key": "ctrl+shift+enter",
         "when": "editorTextFocus && resourceExtname == '.ppnb'"
       }
@@ -293,25 +292,20 @@
       "editor/context": [
         {
           "when": "resourceExtname == '.ppnb'",
-          "command": "prompter.runCell",
+          "command": "prompter.notebook.runCell",
           "group": "prompter"
         }
       ],
       "notebook/toolbar": [
         {
-          "command": "prompter.createPromptCell",
+          "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
           "group": "navigation/add@-100"
-        },
-        {
-          "command": "prompter.createCodeCell",
-          "when": "notebookType == 'prompter-notebook'",
-          "group": "navigation/add@-99"
         }
       ],
       "notebook/cell/title": [
         {
-          "command": "prompter.setCellType",
+          "command": "prompter.notebook.setCellType",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@1"
         }
