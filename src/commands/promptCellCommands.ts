@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from 'uuid';
 // 定义自定义单元格类型
 export const enum PrompterCellKind {
     Prompt = 'prompt',
+    Markdown = 'markdown',
+    Code = "code",
     Output = 'output',
     Error = 'error'
 }
@@ -25,7 +27,6 @@ export function insertPromptCell(editor: vscode.NotebookEditor, insertIndex: num
     
     newCell.metadata = {
         id: `prompt-cell-${uuidv4()}`,
-        customCellKind: PrompterCellKind.Prompt
     };
     
     // 在指定位置插入新cell

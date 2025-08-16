@@ -38,6 +38,35 @@ export class CellExecutor {
     private outputChannel: vscode.OutputChannel;
     private tempDir: string;
 
+    /**
+     * Updates cell properties based on language mode
+     * @param cell The notebook cell to update
+     * @param languageMode The language mode to set
+     */
+    public updateCellLanguageMode(cell: vscode.NotebookCell, languageMode: string): vscode.NotebookCellData {
+        const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
+        
+        // Copy existing metadata
+        cellData.metadata = { ...cell.metadata };
+        
+        // Update cell properties based on language mode
+        if (languageMode === 'prompt') {
+            // For prompt language mode
+            cellData.kind = vscode.NotebookCellKind.Code;
+            cellData.languageId = 'prompt';
+        } else if (languageMode === 'markdown') {
+            // For markdown language mode
+            cellData.kind = vscode.NotebookCellKind.Markup;
+            cellData.languageId = 'markdown';
+        } else {
+            // For all other language modes
+            cellData.kind = vscode.NotebookCellKind.Code;
+            cellData.languageId = languageMode;
+        }
+        
+        return cellData;
+    }
+
     constructor(private context: vscode.ExtensionContext) {
         this.outputChannel = vscode.window.createOutputChannel('Prompter Output');
         this.tempDir = path.join(context.globalStorageUri?.fsPath || '', 'temp');
@@ -68,7 +97,7 @@ export class CellExecutor {
 
         try {
             // 如果是prompt语言，调用LLM API
-            if (language === 'prompt' || cell.metadata?.customCellKind === PrompterCellKind.Prompt) {
+            if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
                 const response = await this.callLLM(code);
                 await this.updateCellOutput(cell, response, '', 0);
@@ -120,7 +149,7 @@ export class CellExecutor {
             // 设置元数据，标记为自定义错误单元格类型并设置为不可编辑
             errorCell.metadata = {
                 ...errorCell.metadata,
-                customCellKind: PrompterCellKind.Error,  // 使用自定义单元格类型
+                hasError: true,
                 sourceCell: currentIndex,
                 editable: false,  // 设置为不可编辑
                 runnable: false   // 设置为不可运行
@@ -283,6 +312,34 @@ export class CellExecutor {
         });
     }
 
+    /**
+     * Applies language mode change to a cell
+     * @param cell The notebook cell to update
+     * @param languageMode The language mode to set
+     */
+    public async applyLanguageModeChange(cell: vscode.NotebookCell, languageMode: string): Promise<void> {
+        try {
+            // Ensure cell index is valid
+            if (cell.index < 0) {
+                this.outputChannel.appendLine(`Warning: Invalid cell index ${cell.index}, cannot update language mode`);
+                return;
+            }
+            
+            // Get updated cell data with new language mode
+            const cellData = this.updateCellLanguageMode(cell, languageMode);
+            
+            // Create and apply the edit
+            const edit = new vscode.WorkspaceEdit();
+            const nbEdit = vscode.NotebookEdit.replaceCells(new vscode.NotebookRange(cell.index, cell.index + 1), [cellData]);
+            edit.set(cell.notebook.uri, [nbEdit]);
+            await vscode.workspace.applyEdit(edit);
+            
+            this.outputChannel.appendLine(`Updated cell ${cell.index + 1} language mode to ${languageMode}`);
+        } catch (error) {
+            this.outputChannel.appendLine(`Error updating cell language mode: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     private async updateCellOutput(cell: vscode.NotebookCell, stdout: string, stderr: string, exitCode: number): Promise<void> {
         const outputs: vscode.NotebookCellOutput[] = [];
 
@@ -320,7 +377,7 @@ export class CellExecutor {
             // 设置元数据，标记为自定义输出单元格类型并设置为不可编辑
             cellData.metadata = {
                 ...cell.metadata,
-                customCellKind: PrompterCellKind.Output,  // 使用自定义单元格类型
+                hasError: false,
                 outputsReadonly: true  // 设置输出为只读
             };
             

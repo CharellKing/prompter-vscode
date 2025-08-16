@@ -21,7 +21,7 @@ export function createNotebookController(
     
     // 配置支持的语言
     controller.supportedLanguages = [
-        'javascript', 'typescript', 'python', 'java', 'csharp', 
+        'prompt', 'javascript', 'typescript', 'python', 'java', 'csharp', 
         'cpp', 'c', 'go', 'rust', 'php', 'ruby', 'swift', 
         'kotlin', 'scala', 'html', 'css', 'json', 'xml', 
         'yaml', 'markdown', 'bash', 'powershell', 'sql'
@@ -39,7 +39,7 @@ export function createNotebookController(
             
             try {
                 // Check for custom cell kinds first
-                if (cell.metadata?.customCellKind === PrompterCellKind.Prompt) {
+                if (cell.metadata?.customCellKind === PrompterCellKind.Prompt || cell.document.languageId === 'prompt') {
                     // Execute prompt cells
                     console.log('Executing prompt cell:', cell.document.getText().substring(0, 50) + '...');
                     await cellExecutor.executeCell(cell);
