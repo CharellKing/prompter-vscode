@@ -7,6 +7,26 @@ import { v4 as uuidv4 } from 'uuid';
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
 
+        // 拦截插入 Code Cell Below
+    context.subscriptions.push(
+        vscode.commands.registerCommand('notebook.cell.insertCodeCellBelow', async (...args) => {
+        // 这里是你的拦截行为
+        vscode.window.showInformationMessage('你拦截了插入代码单元格的行为！');
+        
+        // 可选：决定是否继续调用原命令（如果还想让原功能生效）
+        // await vscode.commands.executeCommand('notebook.cell.insertCodeCellBelow', ...args);
+        })
+    );
+
+    // 其它相关命令同理
+    context.subscriptions.push(
+        vscode.commands.registerCommand('notebook.cell.insertMarkdownCellBelow', async (...args) => {
+        // 这里是你的拦截行为
+        vscode.window.showInformationMessage('你拦截了插入Markdown单元格的行为！');
+        // await vscode.commands.executeCommand('notebook.cell.insertMarkdownCellBelow', ...args);
+        })
+    );
+
     // 注册语言配置
     context.subscriptions.push(
         vscode.languages.setLanguageConfiguration('prompt', {
