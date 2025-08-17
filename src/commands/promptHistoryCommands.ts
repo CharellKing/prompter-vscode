@@ -245,7 +245,6 @@ export function registerPromptHistoryCommands(context: vscode.ExtensionContext) 
         async () => {
             const activeEditor = vscode.window.activeNotebookEditor;
             if (!activeEditor) {
-                vscode.window.showErrorMessage('No active notebook editor');
                 return;
             }
 
