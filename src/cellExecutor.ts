@@ -189,7 +189,9 @@ export class CellExecutor {
         }
     }
 
-    private async callLLM(prompt: string): Promise<ChatResponse> {
+    private async callLLM(prompt: string): Promise<ChatResponse & { executionMetadata: any }> {
+        const startTime = new Date();
+        
         try {
             // 获取配置
             const config = vscode.workspace.getConfiguration('prompter');
@@ -217,13 +219,39 @@ export class CellExecutor {
             // 使用TypeChat适配器调用LLM并获取格式化的ChatResponse
             const chatResponse: ChatResponse = await typeChatAdapter.complete(prompt);
             
+            const endTime = new Date();
+            
             // 检查响应是否成功
             if (!chatResponse.success) {
                 throw new Error(`LLM API error: ${chatResponse.error}`);
             }
             
-            return chatResponse;
+            // 添加执行元数据
+            const executionMetadata = {
+                model: model,
+                provider: provider,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                duration: endTime.getTime() - startTime.getTime(),
+                temperature: config.get<number>('temperature') || 0.7,
+                maxTokens: config.get<number>('maxTokens') || 1000
+            };
+            
+            return {
+                ...chatResponse,
+                executionMetadata
+            };
         } catch (error) {
+            const endTime = new Date();
+            const executionMetadata = {
+                model: 'unknown',
+                provider: 'unknown',
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                duration: endTime.getTime() - startTime.getTime(),
+                error: true
+            };
+            
             if (isAxiosError(error) && error.response) {
                 throw new Error(`LLM API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
             }
@@ -346,28 +374,51 @@ export class CellExecutor {
         }
     }
 
-    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, chatResponse: ChatResponse): Promise<void> {
+    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, chatResponse: ChatResponse & { executionMetadata: any }): Promise<void> {
         const outputs: vscode.NotebookCellOutput[] = [];
 
         if (chatResponse.content) {
+            // Create output metadata with execution details for serialization
+            const outputMetadata = {
+                promptExecution: {
+                    model: chatResponse.executionMetadata.model,
+                    provider: chatResponse.executionMetadata.provider,
+                    startTime: chatResponse.executionMetadata.startTime,
+                    endTime: chatResponse.executionMetadata.endTime,
+                    duration: chatResponse.executionMetadata.duration,
+                    temperature: chatResponse.executionMetadata.temperature,
+                    maxTokens: chatResponse.executionMetadata.maxTokens,
+                    usage: chatResponse.usage,
+                    // Additional properties for serialization/deserialization
+                    cellType: 'prompt',
+                    executionId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    format: chatResponse.format || 'text'
+                }
+            };
+
             // Check if content appears to be markdown            
-            if (chatResponse.format?.toLowerCase() == 'markdown'){
+            if (chatResponse.format?.toLowerCase() === 'markdown'){
                 // Create markdown output for better rendering
                 outputs.push(new vscode.NotebookCellOutput([
                     vscode.NotebookCellOutputItem.text(chatResponse.content, 'text/markdown')
-                ]));
+                ], outputMetadata));
             } else {
                 // Create plain text output
                 outputs.push(new vscode.NotebookCellOutput([
                     vscode.NotebookCellOutputItem.text(chatResponse.content, 'text/plain')
-                ]));
+                ], outputMetadata));
             }
         }
 
         await this.applyCellOutputs(cell, outputs);
         
-        // Log to output channel
+        // Log to output channel with execution details
         this.outputChannel.appendLine(`=== Prompt Cell ${cell.index + 1} Response ===`);
+        this.outputChannel.appendLine(`Model: ${chatResponse.executionMetadata.model} (${chatResponse.executionMetadata.provider})`);
+        this.outputChannel.appendLine(`Start Time: ${chatResponse.executionMetadata.startTime}`);
+        this.outputChannel.appendLine(`End Time: ${chatResponse.executionMetadata.endTime}`);
+        this.outputChannel.appendLine(`Duration: ${chatResponse.executionMetadata.duration}ms`);
+        this.outputChannel.appendLine(`Content:`);
         this.outputChannel.appendLine(chatResponse.content);
         this.outputChannel.appendLine('');
     }

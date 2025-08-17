@@ -187,11 +187,11 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
             if (cellType === 'code') {
                 ppnbCell.execution_count = null;
                 
-                // Properly handle outputs
+                // Properly handle outputs with prompt execution metadata
                 if (cell.outputs && cell.outputs.length > 0) {
                     ppnbCell.outputs = cell.outputs.map(output => {
                         // Convert each output item to the expected format
-                        return {
+                        const outputData = {
                             output_type: 'execute_result',
                             data: (output.items ?? []).reduce((data: any, item) => {
                                 // Safely decode the output data
@@ -203,9 +203,19 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                                 }
                                 return data;
                             }, {}),
-                            metadata: {},
+                            metadata: output.metadata || {},
                             execution_count: null
                         };
+                        
+                        // For prompt cells, ensure execution metadata is preserved
+                        if (cell.languageId === 'prompt' && output.metadata?.promptExecution) {
+                            outputData.metadata = {
+                                ...outputData.metadata,
+                                promptExecution: output.metadata.promptExecution
+                            };
+                        }
+                        
+                        return outputData;
                     });
                 } else {
                     ppnbCell.outputs = [];
