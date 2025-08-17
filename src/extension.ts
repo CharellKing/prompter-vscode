@@ -166,7 +166,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     function updateLLMStatusBar() {
         llmStatusBarItem.text = `$(sparkle) ${getCurrentLLMDisplayName()}`;
-        llmStatusBarItem.command = 'prompter.openLLMConfig';
+        llmStatusBarItem.command = 'prompter.llm.openLLMConfig';
         llmStatusBarItem.tooltip = 'Click to configure LLM settings';
         llmStatusBarItem.show();
     }
