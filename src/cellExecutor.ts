@@ -3,7 +3,7 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios from 'axios';
-import { UniversalLLMProvider, LLMProvider, Message } from './llmProvider';
+import { UniversalLLMProvider, LLMProvider, Message } from './llm/llmProvider';
 
 // Define custom cell kinds (must match the enum in extension.ts)
 export const enum PrompterCellKind {

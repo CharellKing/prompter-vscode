@@ -332,6 +332,7 @@
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "axios": "^1.11.0",
+    "typechat": "^0.1.1",
     "uuid": "^11.1.0"
   }
 }
