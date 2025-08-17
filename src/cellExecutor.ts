@@ -100,8 +100,8 @@ export class CellExecutor {
             // 如果是prompt语言，调用LLM API
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
-                const response = await this.callLLM(code);
-                await this.updateCellOutputWithTypeChat(cell, response);
+                const chatResponse = await this.callLLM(code);
+                await this.updateCellOutputWithTypeChat(cell, chatResponse);
             } else {
                 // 其他语言执行代码
                 console.log(`Running code for language: ${language}`);
@@ -189,7 +189,7 @@ export class CellExecutor {
         }
     }
 
-    private async callLLM(prompt: string): Promise<string> {
+    private async callLLM(prompt: string): Promise<ChatResponse> {
         try {
             // 获取配置
             const config = vscode.workspace.getConfiguration('prompter');
@@ -222,14 +222,7 @@ export class CellExecutor {
                 throw new Error(`LLM API error: ${chatResponse.error}`);
             }
             
-            // 根据格式返回内容
-            if (chatResponse.format === 'markdown') {
-                // 如果是markdown格式，保持原样返回
-                return chatResponse.content;
-            } else {
-                // 如果是plaintext，也直接返回
-                return chatResponse.content;
-            }
+            return chatResponse;
         } catch (error) {
             if (isAxiosError(error) && error.response) {
                 throw new Error(`LLM API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
@@ -353,22 +346,20 @@ export class CellExecutor {
         }
     }
 
-    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, content: string): Promise<void> {
+    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, chatResponse: ChatResponse): Promise<void> {
         const outputs: vscode.NotebookCellOutput[] = [];
 
-        if (content) {
-            // Check if content appears to be markdown
-            const isMarkdown = this.detectMarkdown(content);
-            
-            if (isMarkdown) {
+        if (chatResponse.content) {
+            // Check if content appears to be markdown            
+            if (chatResponse.format?.toLowerCase() == 'markdown'){
                 // Create markdown output for better rendering
                 outputs.push(new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.text(content, 'text/markdown')
+                    vscode.NotebookCellOutputItem.text(chatResponse.content, 'text/markdown')
                 ]));
             } else {
                 // Create plain text output
                 outputs.push(new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.text(content, 'text/plain')
+                    vscode.NotebookCellOutputItem.text(chatResponse.content, 'text/plain')
                 ]));
             }
         }
@@ -377,7 +368,7 @@ export class CellExecutor {
         
         // Log to output channel
         this.outputChannel.appendLine(`=== Prompt Cell ${cell.index + 1} Response ===`);
-        this.outputChannel.appendLine(content);
+        this.outputChannel.appendLine(chatResponse.content);
         this.outputChannel.appendLine('');
     }
 
