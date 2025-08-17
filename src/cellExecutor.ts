@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import axios from 'axios';
 import { UniversalLLMProvider, LLMProvider, Message } from './llm/llmProvider';
+import { TypeChatAdapterFactory, SupportedLLMProviders, ThirdPartyLLMConfig, ChatResponse } from './llm';
 
 // Define custom cell kinds (must match the enum in extension.ts)
 export const enum PrompterCellKind {
@@ -100,7 +101,7 @@ export class CellExecutor {
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
                 const response = await this.callLLM(code);
-                await this.updateCellOutput(cell, response, '', 0);
+                await this.updateCellOutputWithTypeChat(cell, response);
             } else {
                 // 其他语言执行代码
                 console.log(`Running code for language: ${language}`);
@@ -200,23 +201,35 @@ export class CellExecutor {
                 throw new Error(`${provider} API key not configured. Please set it in the extension settings.`);
             }
             
-            // 创建LLM提供者实例
-            const llmProvider = UniversalLLMProvider.fromConfig(provider, model, {
-                apiKey,
+            // 创建TypeChat适配器配置
+            const typeChatConfig: ThirdPartyLLMConfig = {
+                provider: provider as SupportedLLMProviders,
+                model: model,
+                apiKey: apiKey,
                 temperature: config.get<number>('temperature') || 0.7,
-                maxTokens: config.get<number>('maxTokens') || 1000
-            });
+                maxTokens: config.get<number>('maxTokens') || 1000,
+                topP: 1.0
+            };
             
-            // 准备消息
-            const messages: Message[] = [
-                { role: 'user', content: prompt }
-            ];
+            // 创建TypeChat适配器
+            const typeChatAdapter = TypeChatAdapterFactory.create(typeChatConfig);
             
-            // 调用LLM API
-            const response = await llmProvider.complete(messages);
+            // 使用TypeChat适配器调用LLM并获取格式化的ChatResponse
+            const chatResponse: ChatResponse = await typeChatAdapter.complete(prompt);
             
-            // 返回LLM的回复
-            return response.content;
+            // 检查响应是否成功
+            if (!chatResponse.success) {
+                throw new Error(`LLM API error: ${chatResponse.error}`);
+            }
+            
+            // 根据格式返回内容
+            if (chatResponse.format === 'markdown') {
+                // 如果是markdown格式，保持原样返回
+                return chatResponse.content;
+            } else {
+                // 如果是plaintext，也直接返回
+                return chatResponse.content;
+            }
         } catch (error) {
             if (isAxiosError(error) && error.response) {
                 throw new Error(`LLM API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
@@ -340,27 +353,51 @@ export class CellExecutor {
         }
     }
 
-    private async updateCellOutput(cell: vscode.NotebookCell, stdout: string, stderr: string, exitCode: number): Promise<void> {
+    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, content: string): Promise<void> {
         const outputs: vscode.NotebookCellOutput[] = [];
 
-        if (stdout) {
-            outputs.push(new vscode.NotebookCellOutput([
-                vscode.NotebookCellOutputItem.text(stdout, 'text/plain')
-            ]));
+        if (content) {
+            // Check if content appears to be markdown
+            const isMarkdown = this.detectMarkdown(content);
+            
+            if (isMarkdown) {
+                // Create markdown output for better rendering
+                outputs.push(new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.text(content, 'text/markdown')
+                ]));
+            } else {
+                // Create plain text output
+                outputs.push(new vscode.NotebookCellOutput([
+                    vscode.NotebookCellOutputItem.text(content, 'text/plain')
+                ]));
+            }
         }
 
-        if (stderr) {
-            outputs.push(new vscode.NotebookCellOutput([
-                vscode.NotebookCellOutputItem.error(new Error(stderr))
-            ]));
-        }
+        await this.applyCellOutputs(cell, outputs);
+        
+        // Log to output channel
+        this.outputChannel.appendLine(`=== Prompt Cell ${cell.index + 1} Response ===`);
+        this.outputChannel.appendLine(content);
+        this.outputChannel.appendLine('');
+    }
 
-        if (exitCode !== 0 && !stderr) {
-            outputs.push(new vscode.NotebookCellOutput([
-                vscode.NotebookCellOutputItem.error(new Error(`Process exited with code ${exitCode}`))
-            ]));
-        }
+    private detectMarkdown(content: string): boolean {
+        const markdownPatterns = [
+            /^#{1,6}\s/m,           // Headers
+            /\*\*.*\*\*/,           // Bold
+            /\*.*\*/,               // Italic
+            /```[\s\S]*```/,        // Code blocks
+            /`.*`/,                 // Inline code
+            /^\s*[-*+]\s/m,         // Lists
+            /^\s*\d+\.\s/m,         // Numbered lists
+            /\[.*\]\(.*\)/,         // Links
+            /!\[.*\]\(.*\)/         // Images
+        ];
 
+        return markdownPatterns.some(pattern => pattern.test(content));
+    }
+
+    private async applyCellOutputs(cell: vscode.NotebookCell, outputs: vscode.NotebookCellOutput[]): Promise<void> {
         try {
             // Ensure cell index is valid (non-negative)
             if (cell.index < 0) {
@@ -395,8 +432,6 @@ export class CellExecutor {
                         if (cellIndex >= 0) {
                             // 确保输出是展开的
                             vscode.commands.executeCommand('notebook.cell.expandOutputs', cells[cellIndex]);
-                            // 设置输出为只读模式
-                            vscode.commands.executeCommand('notebook.cell.toggleOutputs', cells[cellIndex]);
                         }
                     }
                 }, 100);
@@ -417,17 +452,36 @@ export class CellExecutor {
                             const execution = controller.createNotebookCellExecution(c);
                             execution.replaceOutput(outputs);
                             execution.end(true);
-                            
-                            // 设置输出为只读模式
-                            setTimeout(() => {
-                                vscode.commands.executeCommand('notebook.cell.toggleOutputs', c);
-                            }, 100);
                         });
                 }
             } catch (fallbackError) {
                 this.outputChannel.appendLine(`Fallback error: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
             }
         }
+    }
+
+    private async updateCellOutput(cell: vscode.NotebookCell, stdout: string, stderr: string, exitCode: number): Promise<void> {
+        const outputs: vscode.NotebookCellOutput[] = [];
+
+        if (stdout) {
+            outputs.push(new vscode.NotebookCellOutput([
+                vscode.NotebookCellOutputItem.text(stdout, 'text/plain')
+            ]));
+        }
+
+        if (stderr) {
+            outputs.push(new vscode.NotebookCellOutput([
+                vscode.NotebookCellOutputItem.error(new Error(stderr))
+            ]));
+        }
+
+        if (exitCode !== 0 && !stderr) {
+            outputs.push(new vscode.NotebookCellOutput([
+                vscode.NotebookCellOutputItem.error(new Error(`Process exited with code ${exitCode}`))
+            ]));
+        }
+
+        await this.applyCellOutputs(cell, outputs);
 
         // 同时输出到输出通道
         this.outputChannel.appendLine(`=== Cell ${cell.index + 1} (${cell.document.languageId}) ===`);
