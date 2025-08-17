@@ -9,6 +9,7 @@ import {
     registerInsertCodeCellBelowCommand,
     registerInsertPromptCellAboveCommand,
     registerInsertPromptCellBelowCommand,
+    registerPromptHistoryCommands,
     registerCreateNotebookCommand,
     registerRunCellCommand,
     registerRunAllCellsCommand,
@@ -160,6 +161,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerFocusLLMConfigCommand(context, llmConfigProvider);
     registerSetDefaultCodeLanguageCommand(context);
     registerSetCellTypeCommand(context);
+    registerPromptHistoryCommands(context);
 
     // 注册状态栏项显示当前LLM模型
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);

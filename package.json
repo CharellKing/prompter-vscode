@@ -14,6 +14,7 @@
     "onCommand:prompter.notebook.runCell",
     "onCommand:prompter.cell.insertCodeCellAbove",
     "onCommand:prompter.cell.insertCodeCellBelow",
+    "onCommand:prompter.cell.showPromptHistory",
     "onLanguage:prompt",
     "onNotebook:prompter-notebook",
     "onCommand:prompter.notebook.saveNotebook",
@@ -205,6 +206,12 @@
         "title": "Set Cell Type",
         "category": "Prompter",
         "icon": "$(symbol-class)"
+      },
+      {
+        "command": "prompter.cell.showPromptHistory",
+        "title": "Show Prompt History",
+        "category": "Prompter",
+        "icon": "$(history)"
       }
     ],
     "languages": [
@@ -308,6 +315,11 @@
           "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@1"
+        },
+        {
+          "command": "prompter.cell.showPromptHistory",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "inline@2"
         },
         {
           "command": "prompter.notebook.setCellType",
