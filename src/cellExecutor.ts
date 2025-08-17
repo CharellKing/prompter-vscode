@@ -78,6 +78,38 @@ export class CellExecutor {
         }
     }
 
+    /**
+     * Updates prompt cell history and execution count
+     */
+    private async updatePromptCellHistory(cell: vscode.NotebookCell, content: string): Promise<void> {
+        try {
+            const currentTime = new Date().toISOString();
+            const currentMetadata = cell.metadata || {};
+            
+            // Initialize or update history array
+            const history = currentMetadata.history || [];
+            history.push({
+                content: content,
+                timestamp: currentTime
+            });
+            
+            // Update execution count
+            const executionCount = (currentMetadata.execution_count || 0) + 1;
+            
+            // Create updated cell data with new metadata
+            const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
+            cellData.metadata = {
+                ...currentMetadata,
+                history: history,
+                execution_count: executionCount
+            };
+            
+            this.outputChannel.appendLine(`Updated prompt cell history: execution #${executionCount} at ${currentTime}`);
+        } catch (error) {
+            this.outputChannel.appendLine(`Error updating prompt cell history: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     async executeCell(cell: vscode.NotebookCell): Promise<void> {
         console.log(`Executing cell ${cell.index} with language: ${cell.document.languageId}`);
         
@@ -97,9 +129,13 @@ export class CellExecutor {
         console.log(`Cell content: ${code.substring(0, 100)}...`);
 
         try {
-            // 如果是prompt语言，调用LLM API
+            // 如果是prompt语言，调用LLM API并更新历史记录
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
+                
+                // 更新执行历史和计数
+                await this.updatePromptCellHistory(cell, code);
+                
                 const chatResponse = await this.callLLM(code);
                 await this.updateCellOutputWithTypeChat(cell, chatResponse);
             } else {
@@ -410,7 +446,8 @@ export class CellExecutor {
             }
         }
 
-        await this.applyCellOutputs(cell, outputs);
+        // Use a more direct approach to set outputs
+        await this.setOutputsDirectly(cell, outputs);
         
         // Log to output channel with execution details
         this.outputChannel.appendLine(`=== Prompt Cell ${cell.index + 1} Response ===`);
@@ -421,6 +458,43 @@ export class CellExecutor {
         this.outputChannel.appendLine(`Content:`);
         this.outputChannel.appendLine(chatResponse.content);
         this.outputChannel.appendLine('');
+    }
+
+    /**
+     * Directly set outputs using notebook controller execution
+     */
+    private async setOutputsDirectly(cell: vscode.NotebookCell, outputs: vscode.NotebookCellOutput[]): Promise<void> {
+        try {
+            // Create a temporary notebook controller for execution
+            const controller = vscode.notebooks.createNotebookController(
+                'prompter-temp-controller',
+                'prompter-notebook',
+                'Prompter Temp'
+            );
+
+            // Create execution and set outputs
+            const execution = controller.createNotebookCellExecution(cell);
+            execution.start(Date.now());
+            
+            // Clear existing outputs first
+            execution.clearOutput();
+            
+            // Add new outputs
+            for (const output of outputs) {
+                execution.replaceOutput(output);
+            }
+            
+            execution.end(true, Date.now());
+            
+            // Dispose the temporary controller
+            controller.dispose();
+            
+            this.outputChannel.appendLine(`Successfully set outputs for cell ${cell.index + 1}`);
+        } catch (error) {
+            this.outputChannel.appendLine(`Error setting outputs directly: ${error instanceof Error ? error.message : String(error)}`);
+            // Fallback to the original method
+            await this.applyCellOutputs(cell, outputs);
+        }
     }
 
     private detectMarkdown(content: string): boolean {
@@ -453,7 +527,7 @@ export class CellExecutor {
             // 设置输出
             cellData.outputs = outputs;
             
-            // 设置元数据，标记为自定义输出单元格类型并设置为不可编辑
+            // 保持现有元数据，确保历史记录不丢失
             cellData.metadata = {
                 ...cell.metadata,
                 hasError: false,
@@ -464,41 +538,9 @@ export class CellExecutor {
             edit.set(cell.notebook.uri, [nbEdit]);
             await vscode.workspace.applyEdit(edit);
             
-            // 如果有输出，确保输出是展开的且不可编辑
-            if (outputs.length > 0) {
-                setTimeout(() => {
-                    if (vscode.window.activeNotebookEditor) {
-                        const cells = vscode.window.activeNotebookEditor.notebook.getCells();
-                        const cellIndex = cells.findIndex(c => c.document.uri.toString() === cell.document.uri.toString());
-                        
-                        if (cellIndex >= 0) {
-                            // 确保输出是展开的
-                            vscode.commands.executeCommand('notebook.cell.expandOutputs', cells[cellIndex]);
-                        }
-                    }
-                }, 100);
-            }
+            this.outputChannel.appendLine(`Applied cell outputs for cell ${cell.index + 1}`);
         } catch (error) {
             this.outputChannel.appendLine(`Error updating cell output: ${error instanceof Error ? error.message : String(error)}`);
-            
-            // Try an alternative approach if the standard approach fails
-            try {
-                // Just set the outputs directly if possible
-                if (outputs.length > 0 && vscode.window.activeNotebookEditor) {
-                    const activeEditor = vscode.window.activeNotebookEditor;
-                    activeEditor.notebook.getCells()
-                        .filter((c: vscode.NotebookCell) => c.document.uri.toString() === cell.document.uri.toString())
-                        .forEach(async (c: vscode.NotebookCell) => {
-                            // Create a notebook controller execution
-                            const controller = vscode.notebooks.createNotebookController('prompter-notebook-controller', 'prompter-notebook', 'Prompter');
-                            const execution = controller.createNotebookCellExecution(c);
-                            execution.replaceOutput(outputs);
-                            execution.end(true);
-                        });
-                }
-            } catch (fallbackError) {
-                this.outputChannel.appendLine(`Fallback error: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
-            }
         }
     }
 

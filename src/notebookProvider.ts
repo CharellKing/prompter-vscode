@@ -129,6 +129,11 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                     ...cell.metadata
                 };
 
+                // Set execution count for prompt cells in metadata
+                if (cell.cell_type === 'code' && cell.language === 'prompt') {
+                    cellData.metadata.execution_count = cell.execution_count || null;
+                }
+
                 if (cell.outputs && Array.isArray(cell.outputs) && cell.outputs.length > 0) {
                     try {
                         cellData.outputs = this.toNotebookOutputs(cell.outputs);
@@ -185,7 +190,12 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
             }
 
             if (cellType === 'code') {
-                ppnbCell.execution_count = null;
+                // Set execution count from cell metadata for prompt cells
+                if (cell.languageId === 'prompt') {
+                    ppnbCell.execution_count = cell.metadata?.execution_count || null;
+                } else {
+                    ppnbCell.execution_count = null;
+                }
                 
                 // Properly handle outputs with prompt execution metadata
                 if (cell.outputs && cell.outputs.length > 0) {
