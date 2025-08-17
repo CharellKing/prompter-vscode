@@ -144,11 +144,6 @@
         "category": "Prompter",
         "icon": "$(add)"
       },
-        {
-          "command": "prompter.cell.showPromptHistory",
-          "when": "notebookType == 'prompter-notebook' && notebookCellType == 'code'",
-          "group": "inline@2"
-        },
       {
         "command": "prompter.notebook.runCell",
         "title": "Run Cell",
@@ -318,7 +313,7 @@
         },
         {
           "command": "prompter.cell.showPromptHistory",
-          "when": "notebookType == 'prompter-notebook' && notebookCellType == 'code' && notebookCellLangId == 'prompt'",
+          "when": "notebookType == 'prompter-notebook' && notebookCellType == 'code'",
           "group": "inline@2"
         },
         {
