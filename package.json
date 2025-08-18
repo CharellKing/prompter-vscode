@@ -8,6 +8,12 @@
     "type": "git",
     "url": "https://github.com/prompter/prompter-vscode"
   },
+  "icon": "images/128x128.png",
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.74.0"
   },
