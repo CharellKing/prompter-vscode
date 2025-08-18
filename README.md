@@ -1,6 +1,8 @@
 # Prompter - LLM Prompt Management for VSCode
 
-![Prompter Icon](images/512x512.png)
+<p align="center">
+  <img src="images/128x128.png" alt="Prompter Icon" width="200">
+</p>
 
 Prompter is a powerful VSCode extension that brings Jupyter-like notebook functionality to LLM prompt engineering. Create, manage, and execute prompts against various LLM providers directly within your VSCode environment.
 
