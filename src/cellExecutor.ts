@@ -3,6 +3,7 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios from 'axios';
+import crypto from 'crypto';
 import { UniversalLLMProvider, LLMProvider, Message } from './llm/llmProvider';
 import { TypeChatAdapterFactory, SupportedLLMProviders, ThirdPartyLLMConfig, ChatResponse } from './llm';
 
@@ -81,33 +82,64 @@ export class CellExecutor {
     /**
      * Updates prompt cell history and execution count
      */
-    private async updatePromptCellHistory(cell: vscode.NotebookCell, content: string): Promise<void> {
-        try {
-            const currentTime = new Date().toISOString();
-            const currentMetadata = cell.metadata || {};
-            
-            // Initialize or update history array
-            const history = currentMetadata.history || [];
+    private async updatePromptCellHistory(cell: vscode.NotebookCell, content: string): Promise<vscode.NotebookCell> {
+        const currentTime = new Date().toISOString();
+        const currentMetadata = cell.metadata || {};
+        const cellIndex = cell.index;
+        const notebookUri = cell.notebook.uri.toString();
+
+        const cellId = currentMetadata.id ?? '';
+        // Initialize or update history array
+        const history = currentMetadata.history || [];
+        const currentContentMd5 = crypto.createHash('md5').update(content).digest('hex');
+
+        let hasSameHistory = false;
+        for (const historyItem of history) {
+            // 检查是否已经有相同的history
+            if (historyItem.md5 === currentContentMd5) {
+                hasSameHistory = true;
+                break;
+            }
+        }
+        
+        if (!hasSameHistory) {
+            // 如果有新的history，则更新历史记录
             history.push({
                 content: content,
-                timestamp: currentTime
+                timestamp: currentTime,
+                md5: currentContentMd5,
             });
-            
-            // Update execution count
-            const executionCount = (currentMetadata.execution_count || 0) + 1;
-            
-            // Create updated cell data with new metadata
-            const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
-            cellData.metadata = {
-                ...currentMetadata,
-                history: history,
-                execution_count: executionCount
-            };
-            
-            this.outputChannel.appendLine(`Updated prompt cell history: execution #${executionCount} at ${currentTime}`);
-        } catch (error) {
-            this.outputChannel.appendLine(`Error updating prompt cell history: ${error instanceof Error ? error.message : String(error)}`);
         }
+        
+        // Update execution count
+        const executionCount = (currentMetadata.execution_count || 0) + 1;
+
+        // Apply the metadata changes to the cell
+        const edit = new vscode.WorkspaceEdit();
+        const cellData = new vscode.NotebookCellData(
+            cell.kind,
+            cell.document.getText(),
+            cell.document.languageId
+        );
+        
+        // Set the updated metadata
+        cellData.metadata = {
+            ...currentMetadata,
+            execution_count: executionCount,
+            history: history,
+        }
+        
+        // Create notebook edit to replace the cell with updated metadata
+        const nbEdit = vscode.NotebookEdit.replaceCells(
+            new vscode.NotebookRange(cell.index, cell.index + 1),
+            [cellData]
+        );
+        
+        // Apply the edit
+        edit.set(cell.notebook.uri, [nbEdit]);
+        await vscode.workspace.applyEdit(edit);
+        const notebook = vscode.workspace.notebookDocuments.find(nb => nb.uri.toString() === notebookUri.toString());
+        return notebook?.cellAt(cellIndex) || cell;
     }
 
     async executeCell(cell: vscode.NotebookCell): Promise<void> {
@@ -132,17 +164,14 @@ export class CellExecutor {
             // 如果是prompt语言，调用LLM API并更新历史记录
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
-                
                 // 更新执行历史和计数
-                await this.updatePromptCellHistory(cell, code);
-                
                 const chatResponse = await this.callLLM(code);
-                await this.updateCellOutputWithTypeChat(cell, chatResponse);
+                await this.updateCellOutputWithTypeChat(cell, code, chatResponse);
             } else {
                 // 其他语言执行代码
                 console.log(`Running code for language: ${language}`);
                 const result = await this.runCode(code, language);
-                await this.updateCellOutput(cell, result.stdout, result.stderr, result.exitCode);
+                await this.updateCellOutput(cell, code, result.stdout, result.stderr, result.exitCode);
             }
         } catch (error) {
             console.error('Cell execution error:', error);
@@ -150,7 +179,7 @@ export class CellExecutor {
             const errorMessage = error instanceof Error ? error.message : String(error);
             
             // 1. 更新当前单元格，显示执行状态
-            await this.updateCellOutput(cell, '', errorMessage, 1);
+            await this.updateCellOutput(cell, code, '', errorMessage, 1);
             
             // 记录到输出通道
             this.outputChannel.appendLine(`Error executing cell ${cell.index + 1}: ${errorMessage}`);
@@ -410,7 +439,7 @@ export class CellExecutor {
         }
     }
 
-    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, chatResponse: ChatResponse & { executionMetadata: any }): Promise<void> {
+    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, prompt: string, chatResponse: ChatResponse & { executionMetadata: any }) {
         const outputs: vscode.NotebookCellOutput[] = [];
 
         if (chatResponse.content) {
@@ -447,54 +476,7 @@ export class CellExecutor {
         }
 
         // Use a more direct approach to set outputs
-        await this.setOutputsDirectly(cell, outputs);
-        
-        // Log to output channel with execution details
-        this.outputChannel.appendLine(`=== Prompt Cell ${cell.index + 1} Response ===`);
-        this.outputChannel.appendLine(`Model: ${chatResponse.executionMetadata.model} (${chatResponse.executionMetadata.provider})`);
-        this.outputChannel.appendLine(`Start Time: ${chatResponse.executionMetadata.startTime}`);
-        this.outputChannel.appendLine(`End Time: ${chatResponse.executionMetadata.endTime}`);
-        this.outputChannel.appendLine(`Duration: ${chatResponse.executionMetadata.duration}ms`);
-        this.outputChannel.appendLine(`Content:`);
-        this.outputChannel.appendLine(chatResponse.content);
-        this.outputChannel.appendLine('');
-    }
-
-    /**
-     * Directly set outputs using notebook controller execution
-     */
-    private async setOutputsDirectly(cell: vscode.NotebookCell, outputs: vscode.NotebookCellOutput[]): Promise<void> {
-        try {
-            // Create a temporary notebook controller for execution
-            const controller = vscode.notebooks.createNotebookController(
-                'prompter-temp-controller',
-                'prompter-notebook',
-                'Prompter Temp'
-            );
-
-            // Create execution and set outputs
-            const execution = controller.createNotebookCellExecution(cell);
-            execution.start(Date.now());
-            
-            // Clear existing outputs first
-            execution.clearOutput();
-            
-            // Add new outputs
-            for (const output of outputs) {
-                execution.replaceOutput(output);
-            }
-            
-            execution.end(true, Date.now());
-            
-            // Dispose the temporary controller
-            controller.dispose();
-            
-            this.outputChannel.appendLine(`Successfully set outputs for cell ${cell.index + 1}`);
-        } catch (error) {
-            this.outputChannel.appendLine(`Error setting outputs directly: ${error instanceof Error ? error.message : String(error)}`);
-            // Fallback to the original method
-            await this.applyCellOutputs(cell, outputs);
-        }
+        await this.applyCell(cell, prompt, outputs);
     }
 
     private detectMarkdown(content: string): boolean {
@@ -513,38 +495,63 @@ export class CellExecutor {
         return markdownPatterns.some(pattern => pattern.test(content));
     }
 
-    private async applyCellOutputs(cell: vscode.NotebookCell, outputs: vscode.NotebookCellOutput[]): Promise<void> {
-        try {
-            // Ensure cell index is valid (non-negative)
-            if (cell.index < 0) {
-                this.outputChannel.appendLine(`Warning: Invalid cell index ${cell.index}, cannot update output`);
-                return;
-            }
-            
-            const edit = new vscode.WorkspaceEdit();
-            const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
-            
-            // 设置输出
-            cellData.outputs = outputs;
-            
-            // 保持现有元数据，确保历史记录不丢失
-            cellData.metadata = {
-                ...cell.metadata,
-                hasError: false,
-                outputsReadonly: true  // 设置输出为只读
-            };
-            
-            const nbEdit = vscode.NotebookEdit.replaceCells(new vscode.NotebookRange(cell.index, cell.index + 1), [cellData]);
-            edit.set(cell.notebook.uri, [nbEdit]);
-            await vscode.workspace.applyEdit(edit);
-            
-            this.outputChannel.appendLine(`Applied cell outputs for cell ${cell.index + 1}`);
-        } catch (error) {
-            this.outputChannel.appendLine(`Error updating cell output: ${error instanceof Error ? error.message : String(error)}`);
+    private async applyCell(cell: vscode.NotebookCell, code: string, outputs: vscode.NotebookCellOutput[]) {
+        // Ensure cell index is valid (non-negative)
+        const cellIndex = cell.index;
+        const notebookUri = cell.notebook.uri;
+        const currentTime = new Date().toISOString();
+        const currentMetadata = cell.metadata || {};
+        const history = currentMetadata.history || [];
+        const currentContentMd5 = crypto.createHash('md5').update(code).digest('hex');
+
+        if (cell.index < 0) {
+            this.outputChannel.appendLine(`Warning: Invalid cell index ${cell.index}, cannot update output`);
+            return cell;
         }
+
+        let hasSameHistory = false;
+        for (const historyItem of history) {
+            // 检查是否已经有相同的history
+            if (historyItem.md5 === currentContentMd5) {
+                hasSameHistory = true;
+                break;
+            }
+        }
+
+        if (!hasSameHistory) {
+            // 如果有新的history，则更新历史记录
+            history.push({
+                content: code,
+                timestamp: currentTime,
+                md5: currentContentMd5,
+            });
+        }
+
+        const executionCount = (currentMetadata.execution_count || 0) + 1;
+
+        
+        
+        const edit = new vscode.WorkspaceEdit();
+        const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
+        
+        // 设置输出
+        cellData.outputs = outputs;
+        
+        // 保持现有元数据，确保历史记录不丢失
+        cellData.metadata = {
+            ...currentMetadata,
+            execution_count: executionCount,
+            history: history,
+            hasError: false,
+            outputsReadonly: true  // 设置输出为只读
+        };
+        
+        const nbEdit = vscode.NotebookEdit.replaceCells(new vscode.NotebookRange(cell.index, cell.index + 1), [cellData]);
+        edit.set(cell.notebook.uri, [nbEdit]);
+        await vscode.workspace.applyEdit(edit);
     }
 
-    private async updateCellOutput(cell: vscode.NotebookCell, stdout: string, stderr: string, exitCode: number): Promise<void> {
+    private async updateCellOutput(cell: vscode.NotebookCell, code: string, stdout: string, stderr: string, exitCode: number){
         const outputs: vscode.NotebookCellOutput[] = [];
 
         if (stdout) {
@@ -565,19 +572,6 @@ export class CellExecutor {
             ]));
         }
 
-        await this.applyCellOutputs(cell, outputs);
-
-        // 同时输出到输出通道
-        this.outputChannel.appendLine(`=== Cell ${cell.index + 1} (${cell.document.languageId}) ===`);
-        if (stdout) {
-            this.outputChannel.appendLine('STDOUT:');
-            this.outputChannel.appendLine(stdout);
-        }
-        if (stderr) {
-            this.outputChannel.appendLine('STDERR:');
-            this.outputChannel.appendLine(stderr);
-        }
-        this.outputChannel.appendLine(`Exit code: ${exitCode}`);
-        this.outputChannel.appendLine('');
+        return await this.applyCell(cell, code, outputs);
     }
 }

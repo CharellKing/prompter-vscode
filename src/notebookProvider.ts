@@ -189,14 +189,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 ppnbCell.language = cell.languageId;
             }
 
-            if (cellType === 'code') {
-                // Set execution count from cell metadata for prompt cells
-                if (cell.languageId === 'prompt') {
-                    ppnbCell.execution_count = cell.metadata?.execution_count || null;
-                } else {
-                    ppnbCell.execution_count = null;
-                }
-                
+            if (cellType === 'code') {                
                 // Properly handle outputs with prompt execution metadata
                 if (cell.outputs && cell.outputs.length > 0) {
                     ppnbCell.outputs = cell.outputs.map(output => {

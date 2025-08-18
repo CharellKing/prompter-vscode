@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 interface PromptHistoryItem {
     content: string;
     timestamp: string;
+    md5: string;
 }
 
 class PromptHistoryManager {
@@ -22,7 +23,8 @@ class PromptHistoryManager {
         
         return history.map((item: any) => ({
             content: item.content || '',
-            timestamp: item.timestamp || new Date().toISOString()
+            timestamp: item.timestamp || new Date().toISOString(),
+            md5: item.md5 || ''
         }));
     }
 
