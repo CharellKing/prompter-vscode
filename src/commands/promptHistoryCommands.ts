@@ -9,6 +9,7 @@ interface PromptHistoryItem {
 class PromptHistoryManager {
     private static instance: PromptHistoryManager;
     private panel: vscode.WebviewPanel | undefined;
+    private currentCellContent: string = '';
 
     static getInstance(): PromptHistoryManager {
         if (!PromptHistoryManager.instance) {
@@ -30,6 +31,7 @@ class PromptHistoryManager {
 
     showHistoryPanel(cell: vscode.NotebookCell) {
         const historyItems = this.getHistoryFromCell(cell);
+        this.currentCellContent = cell.document.getText();
         
         if (this.panel) {
             this.panel.dispose();
@@ -84,13 +86,12 @@ class PromptHistoryManager {
     }
 
     private getWebviewContent(historyItems: PromptHistoryItem[]): string {
+        // Get the current cell content if available
+        const currentCellContent = this.currentCellContent || '';
+        
         const historyHtml = historyItems
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .map(item => {
-                const truncatedPrompt = item.content.length > 100 
-                    ? item.content.substring(0, 100) + '...' 
-                    : item.content;
-                
                 const formattedTime = new Date(item.timestamp).toLocaleString(undefined, {
                     year: 'numeric',
                     month: '2-digit',
@@ -101,10 +102,13 @@ class PromptHistoryManager {
                     hour12: false
                 });
                 
+                // Generate diff between this historical prompt and the current prompt
+                const diffHtml = this.generateDiffHtml(item.content, currentCellContent);
+                
                 return `
                     <div class="history-item" onclick="selectPrompt(\`${this.escapeForJs(item.content)}\`)">
                         <div class="timestamp">${this.escapeHtml(formattedTime)}</div>
-                        <div class="prompt-preview">${this.escapeHtml(truncatedPrompt)}</div>
+                        <div class="diff-container">${diffHtml}</div>
                     </div>
                 `;
             })
@@ -146,7 +150,7 @@ class PromptHistoryManager {
                         border: 1px solid var(--vscode-panel-border);
                         border-radius: 6px;
                         padding: 12px;
-                        margin-bottom: 8px;
+                        margin-bottom: 16px;
                         cursor: pointer;
                         transition: all 0.2s ease;
                         background-color: var(--vscode-editor-background);
@@ -160,17 +164,48 @@ class PromptHistoryManager {
                     }
                     
                     .timestamp {
-                        font-size: 11px;
+                        font-size: 12px;
                         color: var(--vscode-descriptionForeground);
-                        margin-bottom: 6px;
+                        margin-bottom: 10px;
                         font-weight: 500;
                     }
                     
-                    .prompt-preview {
+                    .diff-container {
                         font-family: var(--vscode-editor-font-family);
                         white-space: pre-wrap;
                         word-break: break-word;
-                        line-height: 1.4;
+                        line-height: 1.5;
+                        overflow: auto;
+                        max-height: 400px;
+                        border-radius: 4px;
+                    }
+                    
+                    .diff-line {
+                        padding: 2px 0;
+                        display: flex;
+                    }
+                    
+                    .diff-line-number {
+                        color: var(--vscode-editorLineNumber-foreground);
+                        text-align: right;
+                        padding-right: 8px;
+                        user-select: none;
+                        min-width: 40px;
+                    }
+                    
+                    .diff-line-content {
+                        flex: 1;
+                    }
+                    
+                    .diff-added {
+                        background-color: rgba(0, 255, 0, 0.1);
+                    }
+                    
+                    .diff-removed {
+                        background-color: rgba(255, 0, 0, 0.1);
+                    }
+                    
+                    .diff-unchanged {
                         color: var(--vscode-editor-foreground);
                     }
                     
@@ -235,6 +270,119 @@ class PromptHistoryManager {
             .replace(/\n/g, '\\n')
             .replace(/\r/g, '\\r')
             .replace(/\t/g, '\\t');
+    }
+
+    /**
+     * Generates HTML for displaying the diff between two text strings
+     * @param oldText The historical prompt text
+     * @param newText The current prompt text
+     * @returns HTML string representing the diff
+     */
+    private generateDiffHtml(oldText: string, newText: string): string {
+        // Split both texts into lines
+        const oldLines = oldText.split('\n');
+        const newLines = newText.split('\n');
+        
+        // Simple diff algorithm to identify added, removed, and unchanged lines
+        const diffResult: Array<{type: 'added' | 'removed' | 'unchanged', line: string}> = [];
+        
+        // Use a simple LCS (Longest Common Subsequence) approach for diffing
+        const lcsMatrix = this.computeLCSMatrix(oldLines, newLines);
+        this.backtrackLCS(lcsMatrix, oldLines, newLines, oldLines.length, newLines.length, diffResult);
+        
+        // Generate HTML for the diff
+        let diffHtml = '';
+        let lineNumber = 1;
+        
+        for (const item of diffResult) {
+            const cssClass = `diff-${item.type}`;
+            const lineNumberHtml = `<div class="diff-line-number">${lineNumber}</div>`;
+            const lineContentHtml = `<div class="diff-line-content">${this.escapeHtml(item.line)}</div>`;
+            
+            // Only increment line number for unchanged and added lines (not for removed lines)
+            if (item.type !== 'removed') {
+                lineNumber++;
+            }
+            
+            // Add a prefix to indicate the type of change
+            let prefix = '';
+            if (item.type === 'added') {
+                prefix = '+ ';
+            } else if (item.type === 'removed') {
+                prefix = '- ';
+            } else {
+                prefix = '  ';
+            }
+            
+            diffHtml += `<div class="diff-line ${cssClass}">
+                ${lineNumberHtml}
+                <div class="diff-line-content">${this.escapeHtml(prefix + item.line)}</div>
+            </div>`;
+        }
+        
+        return diffHtml;
+    }
+    
+    /**
+     * Computes the Longest Common Subsequence matrix for two arrays
+     */
+    private computeLCSMatrix(oldLines: string[], newLines: string[]): number[][] {
+        const matrix: number[][] = Array(oldLines.length + 1)
+            .fill(null)
+            .map(() => Array(newLines.length + 1).fill(0));
+        
+        for (let i = 1; i <= oldLines.length; i++) {
+            for (let j = 1; j <= newLines.length; j++) {
+                if (oldLines[i - 1] === newLines[j - 1]) {
+                    matrix[i][j] = matrix[i - 1][j - 1] + 1;
+                } else {
+                    matrix[i][j] = Math.max(matrix[i - 1][j], matrix[i][j - 1]);
+                }
+            }
+        }
+        
+        return matrix;
+    }
+    
+    /**
+     * Backtracks through the LCS matrix to build the diff result
+     */
+    private backtrackLCS(
+        matrix: number[][],
+        oldLines: string[],
+        newLines: string[],
+        i: number,
+        j: number,
+        result: Array<{type: 'added' | 'removed' | 'unchanged', line: string}>
+    ): void {
+        if (i === 0 && j === 0) {
+            // Reverse the result since we're backtracking
+            result.reverse();
+            return;
+        }
+        
+        if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+            // Lines match - unchanged
+            result.push({
+                type: 'unchanged',
+                line: oldLines[i - 1]
+            });
+            this.backtrackLCS(matrix, oldLines, newLines, i - 1, j - 1, result);
+        } else if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) {
+            // Line added in new text
+            result.push({
+                type: 'added',
+                line: newLines[j - 1]
+            });
+            this.backtrackLCS(matrix, oldLines, newLines, i, j - 1, result);
+        } else if (i > 0 && (j === 0 || matrix[i][j - 1] < matrix[i - 1][j])) {
+            // Line removed from old text
+            result.push({
+                type: 'removed',
+                line: oldLines[i - 1]
+            });
+            this.backtrackLCS(matrix, oldLines, newLines, i - 1, j, result);
+        }
     }
 }
 
