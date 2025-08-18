@@ -12,18 +12,7 @@ export function registerCreateNotebookCommand(context: vscode.ExtensionContext) 
         const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
         
         // 创建符合新格式的notebook数据
-        const cells = [
-            new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Code,
-                '# Welcome to Prompter!\n\nThis is a new Prompter notebook. You can create code and markdown cells to build interactive documents.',
-                'prompt'
-            ),
-            new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Code,
-                '',
-                defaultLanguage
-            )
-        ];
+        const cells: vscode.NotebookCellData[] = [];
         
         // 为每个cell添加ID
         cells.forEach((cell, index) => {

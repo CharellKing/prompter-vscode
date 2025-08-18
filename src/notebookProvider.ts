@@ -146,15 +146,6 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
             });
         }
 
-        // 如果没有cells，创建一个默认的代码cell
-        if (cells.length === 0) {
-            cells.push(new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Code,
-                '// Welcome to Prompter!\n// Press Ctrl+Enter to run this cell\nconsole.log("Hello, World!");',
-                'javascript'
-            ));
-        }
-
         const notebookData = new vscode.NotebookData(cells);
         notebookData.metadata = notebook?.metadata || {};
 

@@ -76,8 +76,10 @@ export function registerInsertPromptCellBelowCommand(context: vscode.ExtensionCo
             let insertIndex: number;
             if (typeof cellIndex === 'number') {
                 insertIndex = cellIndex + 1;
-            } else {
+            } else if (editor && editor.selection) {
                 insertIndex = editor.selection.start + 1;
+            } else {
+                insertIndex = 0;
             }
             
             // 创建并插入提示词cell
