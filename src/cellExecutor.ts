@@ -73,7 +73,7 @@ export class CellExecutor {
         this.outputChannel = vscode.window.createOutputChannel('Prompter Output');
         this.tempDir = path.join(context.globalStorageUri?.fsPath || '', 'temp');
         
-        // 确保临时目录存在
+        // Ensure temporary directory exists
         if (!fs.existsSync(this.tempDir)) {
             fs.mkdirSync(this.tempDir, { recursive: true });
         }
@@ -95,7 +95,7 @@ export class CellExecutor {
 
         let hasSameHistory = false;
         for (const historyItem of history) {
-            // 检查是否已经有相同的history
+            // Check if the same history already exists
             if (historyItem.md5 === currentContentMd5) {
                 hasSameHistory = true;
                 break;
@@ -103,7 +103,7 @@ export class CellExecutor {
         }
         
         if (!hasSameHistory) {
-            // 如果有新的history，则更新历史记录
+            // If there's new history, update the history records
             history.push({
                 content: content,
                 timestamp: currentTime,
@@ -161,58 +161,58 @@ export class CellExecutor {
         console.log(`Cell content: ${code.substring(0, 100)}...`);
 
         try {
-            // 如果是prompt语言，调用LLM API并更新历史记录
+            // If it's prompt language, call LLM API and update history
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
-                // 更新执行历史和计数
+                // Update execution history and count
                 const chatResponse = await this.callLLM(code);
                 await this.updateCellOutputWithTypeChat(cell, code, chatResponse);
             } else {
-                // 其他语言执行代码
+                // Execute code for other languages
                 console.log(`Running code for language: ${language}`);
                 const result = await this.runCode(code, language);
                 await this.updateCellOutput(cell, code, result.stdout, result.stderr, result.exitCode);
             }
         } catch (error) {
             console.error('Cell execution error:', error);
-            // 创建错误输出单元格，类似于VS Code Jupyter
+            // Create error output cell, similar to VS Code Jupyter
             const errorMessage = error instanceof Error ? error.message : String(error);
             
-            // 1. 更新当前单元格，显示执行状态
+            // 1. Update current cell, display execution status
             await this.updateCellOutput(cell, code, '', errorMessage, 1);
             
-            // 记录到输出通道
+            // Log to output channel
             this.outputChannel.appendLine(`Error executing cell ${cell.index + 1}: ${errorMessage}`);
             
-            // 抛出错误让controller处理
+            // Throw error for controller to handle
             throw error;
         }
     }
     
     /**
-     * 创建一个错误输出单元格
+     * Create an error output cell
      */
     private async createErrorOutputCell(sourceCell: vscode.NotebookCell, errorMessage: string): Promise<void> {
         try {
             const notebook = sourceCell.notebook;
             
-            // 获取当前单元格的索引
+            // Get the current cell index
             const currentIndex = sourceCell.index;
             
-            // 确保索引有效
+            // Ensure index is valid
             if (currentIndex < 0) {
                 this.outputChannel.appendLine(`Warning: Invalid cell index ${currentIndex}, cannot create error output cell`);
                 return;
             }
             
-            // 创建一个新的错误输出单元格
+            // Create a new error output cell
             const errorCell = new vscode.NotebookCellData(
                 vscode.NotebookCellKind.Markup, // 使用Markup类型以便更好地显示错误
                 `## ❌ Error\n\n\`\`\`\n${errorMessage}\n\`\`\``,
                 'markdown'
             );
             
-            // 设置元数据，标记为自定义错误单元格类型并设置为不可编辑
+            // Set metadata, mark as custom error cell type and set as non-editable
             errorCell.metadata = {
                 ...errorCell.metadata,
                 hasError: true,
@@ -221,28 +221,28 @@ export class CellExecutor {
                 runnable: false   // 设置为不可运行
             };
             
-            // 确保在源单元格后面插入错误单元格（索引 + 1 的位置）
+            // Ensure error cell is inserted after the source cell (at index + 1)
             const insertIndex = currentIndex + 1;
             
-            // 创建编辑操作
+            // Create edit operation
             const edit = new vscode.WorkspaceEdit();
             const nbEdit = vscode.NotebookEdit.insertCells(insertIndex, [errorCell]);
             edit.set(notebook.uri, [nbEdit]);
             
-            // 应用编辑
+            // Apply edit
             await vscode.workspace.applyEdit(edit);
             
-            // 设置单元格为不可编辑状态
+            // Set cell to non-editable state
             setTimeout(() => {
                 if (vscode.window.activeNotebookEditor) {
-                    // 获取所有单元格
+                    // Get all cells
                     const cells = vscode.window.activeNotebookEditor.notebook.getCells();
                     
-                    // 查找刚刚插入的错误单元格
-                    // 注意：单元格索引可能已经改变，所以我们需要查找插入位置的单元格
+                    // Find the recently inserted error cell
+                    // Note: Cell index may have changed, so we need to find the cell at the insertion position
                     if (insertIndex < cells.length) {
                         const errorCell = cells[insertIndex];
-                        // 使用VS Code API设置单元格为只读模式
+                        // Use VS Code API to set cell to read-only mode
                         vscode.commands.executeCommand('notebook.cell.toggleOutputs', errorCell);
                     }
                 }
@@ -258,7 +258,7 @@ export class CellExecutor {
         const startTime = new Date();
         
         try {
-            // 获取配置
+            // Get configuration
             const config = vscode.workspace.getConfiguration('prompter');
             const provider = config.get<string>('llmProvider') || 'openai';
             const model = config.get<string>('llmModel') || 'gpt-3.5-turbo';
@@ -268,7 +268,7 @@ export class CellExecutor {
                 throw new Error(`${provider} API key not configured. Please set it in the extension settings.`);
             }
             
-            // 创建TypeChat适配器配置
+            // Create TypeChat adapter configuration
             const typeChatConfig: ThirdPartyLLMConfig = {
                 provider: provider as SupportedLLMProviders,
                 model: model,
@@ -278,20 +278,20 @@ export class CellExecutor {
                 topP: 1.0
             };
             
-            // 创建TypeChat适配器
+            // Create TypeChat adapter
             const typeChatAdapter = TypeChatAdapterFactory.create(typeChatConfig);
             
-            // 使用TypeChat适配器调用LLM并获取格式化的ChatResponse
+            // Use TypeChat adapter to call LLM and get formatted ChatResponse
             const chatResponse: ChatResponse = await typeChatAdapter.complete(prompt);
             
             const endTime = new Date();
             
-            // 检查响应是否成功
+            // Check if response is successful
             if (!chatResponse.success) {
                 throw new Error(`LLM API error: ${chatResponse.error}`);
             }
             
-            // 添加执行元数据
+            // Add execution metadata
             const executionMetadata = {
                 model: model,
                 provider: provider,
@@ -366,7 +366,7 @@ export class CellExecutor {
                     return;
             }
 
-            // 写入临时文件
+            // Write to temporary file
             fs.writeFileSync(tempFile, code);
 
             const process = cp.spawn(command, args, {
@@ -385,11 +385,11 @@ export class CellExecutor {
             });
 
             process.on('close', (code) => {
-                // 清理临时文件
+                // Clean up temporary file
                 try {
                     fs.unlinkSync(tempFile);
                 } catch (e) {
-                    // 忽略清理错误
+                // Ignore cleanup errors
                 }
 
                 resolve({
@@ -400,11 +400,11 @@ export class CellExecutor {
             });
 
             process.on('error', (error) => {
-                // 清理临时文件
+                // Clean up temporary file
                 try {
                     fs.unlinkSync(tempFile);
                 } catch (e) {
-                    // 忽略清理错误
+                // Ignore cleanup errors
                 }
                 reject(error);
             });
@@ -511,7 +511,7 @@ export class CellExecutor {
 
         let hasSameHistory = false;
         for (const historyItem of history) {
-            // 检查是否已经有相同的history
+            // Check if the same history already exists
             if (historyItem.md5 === currentContentMd5) {
                 hasSameHistory = true;
                 break;
@@ -519,7 +519,7 @@ export class CellExecutor {
         }
 
         if (!hasSameHistory) {
-            // 如果有新的history，则更新历史记录
+            // If there's new history, update the history records
             history.push({
                 content: code,
                 timestamp: currentTime,
@@ -534,16 +534,16 @@ export class CellExecutor {
         const edit = new vscode.WorkspaceEdit();
         const cellData = new vscode.NotebookCellData(cell.kind, cell.document.getText(), cell.document.languageId);
         
-        // 设置输出
+        // Set outputs
         cellData.outputs = outputs;
         
-        // 保持现有元数据，确保历史记录不丢失
+        // Maintain existing metadata, ensure history is not lost
         cellData.metadata = {
             ...currentMetadata,
             execution_count: executionCount,
             history: history,
             hasError: false,
-            outputsReadonly: true  // 设置输出为只读
+            outputsReadonly: true  // Set output as read-only
         };
         
         const nbEdit = vscode.NotebookEdit.replaceCells(new vscode.NotebookRange(cell.index, cell.index + 1), [cellData]);

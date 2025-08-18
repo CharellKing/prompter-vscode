@@ -2,19 +2,19 @@ import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 import { PrompterCellKind } from './promptCellCommands';
 
-// 创建新的notebook命令
+// Register command to create a new notebook
 export function registerCreateNotebookCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.notebook.createNotebook', async () => {
         const uri = vscode.Uri.parse(`untitled:Untitled-${Date.now()}.ppnb`);
         
-        // 获取默认代码语言
+        // Get default code language
         const config = vscode.workspace.getConfiguration('prompter');
         const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
         
-        // 创建符合新格式的notebook数据
+        // Create notebook data in the new format
         const cells: vscode.NotebookCellData[] = [];
         
-        // 为每个cell添加ID
+        // Add ID for each cell
         cells.forEach((cell, index) => {
             cell.metadata = {
                 id: `cell-${uuidv4()}`
@@ -31,7 +31,7 @@ export function registerCreateNotebookCommand(context: vscode.ExtensionContext) 
     return command;
 }
 
-// 运行单元格命令
+// Register command to run cell
 export function registerRunCellCommand(context: vscode.ExtensionContext, cellExecutor: any) {
     const command = vscode.commands.registerCommand('prompter.notebook.runCell', async () => {
         const editor = vscode.window.activeNotebookEditor;
@@ -47,7 +47,7 @@ export function registerRunCellCommand(context: vscode.ExtensionContext, cellExe
     return command;
 }
 
-// 运行所有单元格命令
+// Register command to run all cells
 export function registerRunAllCellsCommand(context: vscode.ExtensionContext, cellExecutor: any) {
     const command = vscode.commands.registerCommand('prompter.notebook.runAllCells', async () => {
         const editor = vscode.window.activeNotebookEditor;
@@ -64,7 +64,7 @@ export function registerRunAllCellsCommand(context: vscode.ExtensionContext, cel
     return command;
 }
 
-// 保存notebook命令
+// Register command to save notebook
 export function registerSaveNotebookCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.notebook.saveNotebook', async () => {
         const editor = vscode.window.activeNotebookEditor;
@@ -88,7 +88,7 @@ export function registerSaveNotebookCommand(context: vscode.ExtensionContext) {
     return command;
 }
 
-// 设置单元格类型命令
+// Register command to set cell type
 export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.notebook.setCellType', async (cellUri?: vscode.Uri, cellIndex?: number) => {
         const editor = vscode.window.activeNotebookEditor;
@@ -108,7 +108,7 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
             return;
         }
 
-        // 定义可用的cell类型
+        // Define available cell types
         const cellTypes = [
             { label: '$(code) Code Cell', value: 'code', description: 'Execute code in various languages' },
             { label: '$(sparkle) Prompt Cell', value: 'prompt', description: 'Send prompts to LLM' },
@@ -124,7 +124,7 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
             return;
         }
 
-        // 根据选择的类型设置cell
+        // Set cell based on selected type
         let newCellKind: vscode.NotebookCellKind;
         let newLanguage: string;
         let newMetadata: any = { ...targetCell.metadata };
@@ -147,7 +147,7 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
                 return;
         }
 
-        // 创建新的cell数据
+        // Create new cell data
         const newCellData = new vscode.NotebookCellData(
             newCellKind,
             targetCell.document.getText(),
@@ -155,7 +155,7 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
         );
         newCellData.metadata = newMetadata;
 
-        // 替换cell
+        // Replace cell
         const edit = new vscode.WorkspaceEdit();
         const nbEdit = vscode.NotebookEdit.replaceCells(
             new vscode.NotebookRange(targetCell.index, targetCell.index + 1),
@@ -167,33 +167,33 @@ export function registerSetCellTypeCommand(context: vscode.ExtensionContext) {
         vscode.window.showInformationMessage(`Cell type changed to ${selectedType.label.replace(/\$\([^)]+\)\s*/, '')}`);
     });
     
-    // 注册语言模式变更事件处理
+    // Register language mode change event handler
     context.subscriptions.push(
         vscode.workspace.onDidChangeNotebookDocument(async event => {
             if (event.notebook.notebookType !== 'prompter-notebook') {
                 return;
             }
             
-            // 导入CellExecutor实例
+            // Import CellExecutor instance
             const { cellExecutor } = require('../extension');
             if (!cellExecutor) {
                 console.error('CellExecutor not found in extension exports');
                 return;
             }
             
-            // 检查每个变更的单元格
+            // Check each changed cell
             for (const cellChange of event.cellChanges) {
-                // 确保document属性存在
+                // Ensure document property exists
                 if (!cellChange.document) {
                     continue;
                 }
                 
-                // 如果语言发生了变化
+                // If language has changed
                 if (cellChange.cell.document.languageId !== cellChange.document.languageId) {
                     const cell = cellChange.cell;
                     const newLanguageId = cellChange.document.languageId;
                     
-                    // 使用CellExecutor的applyLanguageModeChange方法来更新单元格
+                    // Use CellExecutor's applyLanguageModeChange method to update the cell
                     await cellExecutor.applyLanguageModeChange(cell, newLanguageId);
                 }
             }

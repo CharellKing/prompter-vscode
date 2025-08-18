@@ -8,7 +8,7 @@ interface PPNBCell {
         [key: string]: any;
     };
     source: string[];
-    language?: string; // 添加语言字段
+    language?: string; // Add language field
     outputs?: any[];
     execution_count?: number | null;
 }
@@ -44,15 +44,15 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
     }
 
     private stringToSource(content: string): string[] {
-        // 将字符串按行分割，保留换行符
+        // Split string by lines, preserving line breaks
         const lines = content.split('\n');
         return lines.map((line, index) => {
-            // 除了最后一行，其他行都加上换行符
+            // Add line break to all lines except the last one
             return index < lines.length - 1 ? line + '\n' : line;
         });
     }
 
-    // 将保存文件中的输出转换为 VS Code Notebook 输出对象
+    // Convert outputs from saved file to VS Code Notebook output objects
     private toNotebookOutputs(outputs: any[]): vscode.NotebookCellOutput[] {
         try {
             return outputs.map((out: any) => {
@@ -114,7 +114,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                     language = 'prompt';
                 } else {
                     cellKind = vscode.NotebookCellKind.Code;
-                    // 优先使用保存的语言信息，否则使用默认值
+                    // Prioritize saved language information, otherwise use default value
                     language = cell.language || notebook?.metadata?.language_info?.name || 'javascript';
                 }
 
@@ -175,7 +175,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 source: this.stringToSource(cell.value)
             };
 
-            // 为代码单元格保存语言信息
+            // Save language information for code cells
             if (cellType === 'code') {
                 ppnbCell.language = cell.languageId;
             }
@@ -216,7 +216,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 }
             }
 
-            // 移除id从metadata中，因为它已经是顶级属性
+            // Remove id from metadata since it's already a top-level property
             delete ppnbCell.metadata.id;
 
             return ppnbCell;

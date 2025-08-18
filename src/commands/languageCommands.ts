@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-// 设置默认代码语言命令
+// Register command to set default code language
 export function registerSetDefaultCodeLanguageCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.language.setDefaultCodeLanguage', async () => {
         const languages = [

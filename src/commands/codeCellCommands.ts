@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 
-// 创建代码单元格的通用函数
+// Common function for creating code cells
 export function insertCodeCell(editor: vscode.NotebookEditor, insertIndex: number) {
     if (!editor) {
         return null;
@@ -9,11 +9,11 @@ export function insertCodeCell(editor: vscode.NotebookEditor, insertIndex: numbe
     
     const notebook = editor.notebook;
     
-    // 获取默认代码语言
+    // Get default code language
     const config = vscode.workspace.getConfiguration('prompter');
     const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
     
-    // 创建新的代码cell
+    // Create new code cell
     const newCell = new vscode.NotebookCellData(
         vscode.NotebookCellKind.Code,
         '',
@@ -24,7 +24,7 @@ export function insertCodeCell(editor: vscode.NotebookEditor, insertIndex: numbe
         id: `code-cell-${uuidv4()}`
     };
     
-    // 在指定位置插入新cell
+    // Insert new cell at specified position
     const edit = new vscode.WorkspaceEdit();
     const nbEdit = vscode.NotebookEdit.insertCells(insertIndex, [newCell]);
     edit.set(notebook.uri, [nbEdit]);
@@ -33,12 +33,12 @@ export function insertCodeCell(editor: vscode.NotebookEditor, insertIndex: numbe
 }
 
 
-// 添加在cell上方创建代码cell的命令
+// Register command to insert code cell above current cell
 export function registerInsertCodeCellAboveCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.cell.insertCodeCellAbove', async (cellUri?: vscode.Uri, cellIndex?: number) => {
         const editor = vscode.window.activeNotebookEditor;
         if (editor) {
-            // 确定插入位置（当前cell上方）
+            // Determine insertion position (above current cell)
             let insertIndex: number;
             if (typeof cellIndex === 'number') {
                 insertIndex = cellIndex;
@@ -46,12 +46,12 @@ export function registerInsertCodeCellAboveCommand(context: vscode.ExtensionCont
                 insertIndex = editor.selection.start;
             }
             
-            // 创建并插入代码cell
+            // Create and insert code cell
             const result = insertCodeCell(editor, insertIndex);
             if (result) {
                 await vscode.workspace.applyEdit(result.edit);
                 
-                // 选中新创建的cell
+                // Select newly created cell
                 const newSelection = new vscode.NotebookRange(result.insertIndex, result.insertIndex + 1);
                 editor.selection = newSelection;
             }
@@ -62,12 +62,12 @@ export function registerInsertCodeCellAboveCommand(context: vscode.ExtensionCont
     return command;
 }
 
-// 添加在cell下方创建代码cell的命令
+// Register command to insert code cell below current cell
 export function registerInsertCodeCellBelowCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.cell.insertCodeCellBelow', async (cellUri?: vscode.Uri, cellIndex?: number) => {
         const editor = vscode.window.activeNotebookEditor;
         if (editor) {
-            // 确定插入位置（当前cell下方）
+            // Determine insertion position (below current cell)
             let insertIndex: number;
             if (typeof cellIndex === 'number') {
                 insertIndex = cellIndex + 1;
@@ -75,12 +75,12 @@ export function registerInsertCodeCellBelowCommand(context: vscode.ExtensionCont
                 insertIndex = editor.selection.start + 1;
             }
             
-            // 创建并插入代码cell
+            // Create and insert code cell
             const result = insertCodeCell(editor, insertIndex);
             if (result) {
                 await vscode.workspace.applyEdit(result.edit);
                 
-                // 选中新创建的cell
+                // Select newly created cell
                 const newSelection = new vscode.NotebookRange(result.insertIndex, result.insertIndex + 1);
                 editor.selection = newSelection;
             }

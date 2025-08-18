@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 
-// 获取当前LLM显示名称
+// Get current LLM display name
 export function getCurrentLLMDisplayName(): string {
     const config = vscode.workspace.getConfiguration('prompter');
     const model = config.get<string>('llmModel') || 'gpt-3.5-turbo';
     return model;
 }
 
-// 设置LLM Provider命令
+// Register command to set LLM Provider
 export function registerSetProviderCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.llm.setProvider', async () => {
         const providers = ['openai', 'deepseek', 'qwen', 'anthropic', 'gemini', 'mistral'];
@@ -21,7 +21,7 @@ export function registerSetProviderCommand(context: vscode.ExtensionContext) {
             await config.update('llmProvider', provider, vscode.ConfigurationTarget.Global);
             vscode.window.showInformationMessage(`LLM Provider has been set to ${provider}.`);
             
-            // 提示用户设置对应的API Key
+            // Prompt user to set corresponding API Key
             const setApiKey = await vscode.window.showInformationMessage(
                 `Would you like to set the API Key for ${provider}?`,
                 'Yes', 'No'
@@ -37,7 +37,7 @@ export function registerSetProviderCommand(context: vscode.ExtensionContext) {
     return command;
 }
 
-// 设置API Key命令
+// Register command to set API Key
 export function registerSetApiKeyCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.llm.setApiKey', async (provider?: string) => {
         if (!provider) {
@@ -63,13 +63,13 @@ export function registerSetApiKeyCommand(context: vscode.ExtensionContext) {
     return command;
 }
 
-// 设置模型命令
+// Register command to set model
 export function registerSetModelCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.llm.setModel', async () => {
         const config = vscode.workspace.getConfiguration('prompter');
         const provider = config.get<string>('llmProvider') || 'openai';
         
-        // 根据提供商获取可用模型
+        // Get available models based on provider
         let models: string[] = [];
         switch (provider) {
             case 'openai':
@@ -107,7 +107,7 @@ export function registerSetModelCommand(context: vscode.ExtensionContext) {
     return command;
 }
 
-// 综合LLM配置命令
+// Register comprehensive LLM configuration command
 export function registerConfigureLLMCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.llm.configureLLM', async () => {
         const config = vscode.workspace.getConfiguration('prompter');
@@ -116,7 +116,7 @@ export function registerConfigureLLMCommand(context: vscode.ExtensionContext) {
         const currentTemperature = config.get<number>('temperature') || 0.7;
         const currentMaxTokens = config.get<number>('maxTokens') || 1000;
 
-        // 显示当前配置和选项菜单
+        // Display current configuration and options menu
         const options = [
             `Current Provider: ${currentProvider} - Change Provider`,
             `Current Model: ${currentModel} - Change Model`,
@@ -200,17 +200,17 @@ export function registerConfigureLLMCommand(context: vscode.ExtensionContext) {
     return command;
 }
 
-// 打开LLM配置页面命令
+// Register command to open LLM configuration page
 export function registerOpenLLMConfigCommand(context: vscode.ExtensionContext, llmConfigProvider: any) {
     const command = vscode.commands.registerCommand('prompter.llm.openLLMConfig', async () => {
         try {
-            // 先显示面板区域
+            // First show panel area
             await vscode.commands.executeCommand('workbench.action.togglePanel');
-            // 等待一下确保面板打开
+            // Wait a moment to ensure panel is open
             await new Promise(resolve => setTimeout(resolve, 100));
-            // 聚焦到Prompter面板
+            // Focus on Prompter panel
             await vscode.commands.executeCommand('workbench.view.extension.prompter-panel');
-            // 显示LLM配置视图
+            // Show LLM configuration view
             llmConfigProvider.show();
         } catch (error) {
             console.error('Failed to show LLM config panel:', error);
@@ -223,17 +223,17 @@ export function registerOpenLLMConfigCommand(context: vscode.ExtensionContext, l
     return command;
 }
 
-// 聚焦LLM配置面板命令
+// Register command to focus LLM configuration panel
 export function registerFocusLLMConfigCommand(context: vscode.ExtensionContext, llmConfigProvider: any) {
     const command = vscode.commands.registerCommand('prompter.llm.llmConfigFocus', async () => {
         try {
-            // 先显示面板区域
+            // First show panel area
             await vscode.commands.executeCommand('workbench.action.togglePanel');
-            // 等待一下确保面板打开
+            // Wait a moment to ensure panel is open
             await new Promise(resolve => setTimeout(resolve, 100));
-            // 聚焦到Prompter面板
+            // Focus on Prompter panel
             await vscode.commands.executeCommand('workbench.view.extension.prompter-panel');
-            // 显示LLM配置视图
+            // Show LLM configuration view
             llmConfigProvider.show();
         } catch (error) {
             console.error('Failed to focus LLM config panel:', error);

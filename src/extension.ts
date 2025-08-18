@@ -50,23 +50,23 @@ export function activate(context: vscode.ExtensionContext) {
     //     })
     // );
     
-    // 监听cell语言变更
+    // Listen for cell language changes
     // context.subscriptions.push(
     //     vscode.workspace.onDidChangeNotebookDocument(async event => {
     //         if (event.notebook.notebookType !== 'prompter-notebook') {
     //             return;
     //         }
             
-    //         // 检查每个变更的单元格
+    //         // Check each changed cell
     //         for (const cellChange of event.cellChanges) {                    
     //                 const cell = cellChange.cell;                    
-    //                 // 使用CellExecutor的applyLanguageModeChange方法来更新单元格
+    //                 // Use CellExecutor's applyLanguageModeChange method to update the cell
     //                 await cellExecutor.applyLanguageModeChange(cell);
     //         }
     //     })
     // );
 
-    // 注册语言配置
+    // Register language configuration
     context.subscriptions.push(
         vscode.languages.setLanguageConfiguration('prompt', {
             comments: {
@@ -83,22 +83,22 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // 注册notebook provider
+    // Register notebook provider
     const notebookProvider = new PrompterNotebookProvider();
     context.subscriptions.push(
         vscode.workspace.registerNotebookSerializer('prompter-notebook', notebookProvider)
     );
 
-    // 创建cell执行器并导出
+    // Create cell executor and export it
     cellExecutor = new CellExecutor(context);
 
-    // 创建并配置notebook controller
+    // Create and configure notebook controller
     const controller = createNotebookController(context, cellExecutor);
 
-    // 创建LLM配置Web视图提供者
+    // Create LLM configuration webview provider
     const llmConfigProvider = new LLMConfigWebviewProvider(context);
     
-    // 注册webview view provider
+    // Register webview view provider
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
             LLMConfigWebviewProvider.viewType,
@@ -111,7 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
     const AUTO_SAVE_DELAY = 1500;
 
     function scheduleNotebookSave(doc: vscode.NotebookDocument) {
-        // 只对已保存的文件（有文件路径）进行自动保存，跳过未命名文件
+        // Only auto-save files that have been saved (have a file path), skip untitled files
         if (doc.uri.scheme !== 'file') {
             console.log('Skipping auto-save for untitled notebook:', doc.uri.toString());
             return;
@@ -125,7 +125,7 @@ export function activate(context: vscode.ExtensionContext) {
         const handle = setTimeout(async () => {
             pendingSaves.delete(key);
             try {
-                // 只保存已有文件路径的文件
+                // Only save files that already have a file path
                 await vscode.workspace.saveAll(false);
                 console.log('Auto-saved notebook:', doc.uri.fsPath);
             } catch (err) {
@@ -144,7 +144,7 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // 注册所有命令
+    // Register all commands
     registerInsertPromptCellAboveCommand(context);
     registerInsertPromptCellBelowCommand(context);
     registerInsertCodeCellAboveCommand(context);
@@ -163,7 +163,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerSetCellTypeCommand(context);
     registerPromptHistoryCommands(context);
 
-    // 注册状态栏项显示当前LLM模型
+    // Register status bar item to display current LLM model
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
     
     function updateLLMStatusBar() {
@@ -180,7 +180,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
     
-    // 注册状态栏项显示默认代码语言
+    // Register status bar item to display default code language
     const codeLanguageStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     
     function updateCodeLanguageStatusBar() {
@@ -199,11 +199,11 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
     
-    // 初始化状态栏
+    // Initialize status bar
     updateLLMStatusBar();
     updateCodeLanguageStatusBar();
     
-    // 监听编辑器变化以更新状态栏显示
+    // Listen for editor changes to update status bar display
     context.subscriptions.push(
         vscode.window.onDidChangeActiveTextEditor(() => {
             updateLLMStatusBar();
@@ -212,7 +212,7 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
     
-    // 监听配置变化更新状态栏
+    // Listen for configuration changes to update status bar
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration((e) => {
             if (e.affectsConfiguration('prompter.llmProvider') || 
@@ -228,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     context.subscriptions.push(llmStatusBarItem, codeLanguageStatusBarItem);
 
-    // 注册状态栏项
+    // Register status bar item
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     
     function updateStatusBar() {
@@ -245,7 +245,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }
     
-    // 初始化状态栏
+    // Initialize status bar
     updateStatusBar();
     
     context.subscriptions.push(statusBarItem);
