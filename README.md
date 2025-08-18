@@ -1,15 +1,17 @@
-# Prompter VSCode Extension
+# Prompter - LLM Prompt Management for VSCode
 
-A powerful VSCode extension for creating and running interactive code notebooks, similar to Jupyter notebooks but integrated directly into your VSCode environment.
+Prompter is a powerful VSCode extension that brings Jupyter-like notebook functionality to LLM prompt engineering. Create, manage, and execute prompts against various LLM providers directly within your VSCode environment.
 
 ## Features
 
-- 📝 **Multi-language Support**: Write and execute code in JavaScript, Python, TypeScript, Bash, and PowerShell
-- ⚡ **Interactive Execution**: Run individual cells or all cells with keyboard shortcuts
-- 📊 **Real-time Output**: See execution results immediately below each code cell
-- 🎨 **Syntax Highlighting**: Full syntax highlighting for supported languages
-- 📁 **File Format**: Save your notebooks as `.ppnb` files
-- 🔧 **Easy Integration**: Seamlessly works with your existing VSCode setup
+- 🤖 **Multi-LLM Support**: Connect to OpenAI, Anthropic, Deepseek, Qwen, Gemini, and Mistral
+- 📝 **Interactive Prompt Cells**: Create and manage prompt cells in a notebook interface
+- 💻 **Code Cell Integration**: Mix prompts with executable code cells for complete workflows
+- 📊 **Response History**: Track and review prompt response history
+- 🔄 **Run Cells**: Execute individual cells or run all cells in sequence
+- 📁 **Notebook Format**: Save your prompt notebooks as `.ppnb` files
+- 🎨 **Syntax Highlighting**: Dedicated syntax highlighting for prompt content
+- ⚙️ **Configurable Settings**: Customize LLM providers, models, and parameters
 
 ## Installation
 
@@ -25,33 +27,43 @@ A powerful VSCode extension for creating and running interactive code notebooks,
 
 1. Open the Command Palette (`Ctrl+Shift+P`)
 2. Search for "Create New Prompter Notebook"
-3. A new `.ppnb` file will be created with a sample code cell
+3. A new `.ppnb` file will be created with a sample prompt cell
 
-### Running Code
+### Working with Cells
 
+- **Add Prompt Cell**: Click the "Prompt" button in the notebook toolbar
+- **Add Code Cell**: Click the "Code" button in the notebook toolbar
+- **Add Markdown Cell**: Click the "Markdown" button in the notebook toolbar
 - **Run Current Cell**: `Ctrl+Enter`
 - **Run All Cells**: `Ctrl+Shift+Enter`
-- **Right-click Menu**: Use the context menu to run cells
 
-### Supported Languages
+### Configuring LLM Providers
 
-- **JavaScript**: Node.js execution
-- **Python**: Python interpreter
-- **TypeScript**: ts-node execution
-- **Bash**: Shell script execution
-- **PowerShell**: PowerShell script execution
+1. Click the settings gear icon in the notebook toolbar
+2. Select your preferred LLM provider (OpenAI, Anthropic, etc.)
+3. Enter your API key for the selected provider
+4. Configure additional parameters like temperature and max tokens
 
-### File Structure
+### Supported LLM Providers
 
-Prompter notebooks are saved as JSON files with the `.ppnb` extension. Each cell contains:
-- Code content
-- Language identifier
-- Cell type (code or markdown)
-- Metadata
+- **OpenAI**: GPT-3.5, GPT-4, etc.
+- **Anthropic**: Claude models
+- **Deepseek**: Deepseek models
+- **Qwen**: Qwen models
+- **Gemini**: Google Gemini models
+- **Mistral**: Mistral AI models
 
-## Example
+### Prompt History
 
-Check out the included `example.ppnb` file to see the extension in action with sample code in different languages.
+Access your prompt history by clicking the history icon on any prompt cell. This allows you to review previous responses and iterations of your prompts.
+
+## Example Workflows
+
+- **Prompt Engineering**: Iterate on prompts to get the best responses from LLMs
+- **Code Generation**: Generate code with LLMs and test it in code cells
+- **Documentation**: Create documentation with LLM assistance
+- **Data Analysis**: Combine prompt cells with code cells for interactive data analysis
+- **Learning**: Use as a learning tool to understand LLM capabilities and limitations
 
 ## Development
 
@@ -75,13 +87,9 @@ vsce package
 
 ## Requirements
 
-To run code in different languages, you need the respective interpreters/runtimes installed:
-
-- **Node.js** for JavaScript
-- **Python** for Python code
-- **ts-node** for TypeScript (install with `npm install -g ts-node`)
-- **Bash** for shell scripts (available on most Unix systems)
-- **PowerShell** for PowerShell scripts (pre-installed on Windows)
+- VSCode 1.74.0 or higher
+- Node.js and npm
+- API keys for your preferred LLM providers
 
 ## Contributing
 
@@ -93,9 +101,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Roadmap
 
-- [ ] Add more language support (Go, Rust, Java, etc.)
-- [ ] Implement variable sharing between cells
-- [ ] Add plot/chart visualization support
-- [ ] Implement cell execution history
+- [ ] Add support for more LLM providers
+- [ ] Implement prompt templates and variables
+- [ ] Add visualization tools for token usage and costs
+- [ ] Enable sharing of prompt notebooks
+- [ ] Implement collaborative prompt engineering features
 - [ ] Add export functionality (HTML, PDF)
-- [ ] Implement collaborative editing features

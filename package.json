@@ -1,8 +1,13 @@
 {
   "name": "prompter-vscode",
-  "displayName": "Prompter - Code Runner",
-  "description": "A VSCode extension for editing and running code snippets, similar to Jupyter notebooks",
-  "version": "0.0.1",
+  "displayName": "Prompter - Prompt Runner",
+  "description": "A VSCode extension for creating, managing, and executing LLM prompts in a notebook-like interface, similar to Jupyter notebooks",
+  "version": "1.0.0",
+  "publisher": "prompter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prompter/prompter-vscode"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -353,7 +358,8 @@
     "@types/form-data": "^2.2.1",
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
-    "typescript": "^4.9.4"
+    "typescript": "^4.9.5",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
