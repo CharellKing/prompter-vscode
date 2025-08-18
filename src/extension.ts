@@ -167,27 +167,50 @@ export function activate(context: vscode.ExtensionContext) {
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
     
     function updateLLMStatusBar() {
-        llmStatusBarItem.text = `$(sparkle) ${getCurrentLLMDisplayName()}`;
-        llmStatusBarItem.command = 'prompter.llm.openLLMConfig';
-        llmStatusBarItem.tooltip = 'Click to configure LLM settings';
-        llmStatusBarItem.show();
+        const activeEditor = vscode.window.activeTextEditor;
+        const shouldShow = activeEditor && activeEditor.document.uri.fsPath.endsWith('.ppnb');
+        
+        if (shouldShow) {
+            llmStatusBarItem.text = `$(sparkle) ${getCurrentLLMDisplayName()}`;
+            llmStatusBarItem.command = 'prompter.llm.openLLMConfig';
+            llmStatusBarItem.tooltip = 'Click to configure LLM settings';
+            llmStatusBarItem.show();
+        } else {
+            llmStatusBarItem.hide();
+        }
     }
     
     // 注册状态栏项显示默认代码语言
     const codeLanguageStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     
     function updateCodeLanguageStatusBar() {
-        const config = vscode.workspace.getConfiguration('prompter');
-        const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
-        codeLanguageStatusBarItem.text = `$(code) ${defaultLanguage}`;
-        codeLanguageStatusBarItem.command = 'prompter.language.setDefaultCodeLanguage';
-        codeLanguageStatusBarItem.tooltip = 'Click to set default code language';
-        codeLanguageStatusBarItem.show();
+        const activeEditor = vscode.window.activeTextEditor;
+        const shouldShow = activeEditor && activeEditor.document.uri.fsPath.endsWith('.ppnb');
+        
+        if (shouldShow) {
+            const config = vscode.workspace.getConfiguration('prompter');
+            const defaultLanguage = config.get<string>('defaultCodeLanguage') || 'javascript';
+            codeLanguageStatusBarItem.text = `$(code) ${defaultLanguage}`;
+            codeLanguageStatusBarItem.command = 'prompter.language.setDefaultCodeLanguage';
+            codeLanguageStatusBarItem.tooltip = 'Click to set default code language';
+            codeLanguageStatusBarItem.show();
+        } else {
+            codeLanguageStatusBarItem.hide();
+        }
     }
     
     // 初始化状态栏
     updateLLMStatusBar();
     updateCodeLanguageStatusBar();
+    
+    // 监听编辑器变化以更新状态栏显示
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor(() => {
+            updateLLMStatusBar();
+            updateCodeLanguageStatusBar();
+            updateStatusBar();
+        })
+    );
     
     // 监听配置变化更新状态栏
     context.subscriptions.push(
@@ -207,10 +230,24 @@ export function activate(context: vscode.ExtensionContext) {
 
     // 注册状态栏项
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = "$(play) Prompter";
-    statusBarItem.command = 'prompter.notebook.createNotebook';
-    statusBarItem.tooltip = 'Create new Prompter notebook';
-    statusBarItem.show();
+    
+    function updateStatusBar() {
+        const activeEditor = vscode.window.activeTextEditor;
+        const shouldShow = activeEditor && activeEditor.document.uri.fsPath.endsWith('.ppnb');
+        
+        if (shouldShow) {
+            statusBarItem.text = "$(play) Prompter";
+            statusBarItem.command = 'prompter.notebook.createNotebook';
+            statusBarItem.tooltip = 'Create new Prompter notebook';
+            statusBarItem.show();
+        } else {
+            statusBarItem.hide();
+        }
+    }
+    
+    // 初始化状态栏
+    updateStatusBar();
+    
     context.subscriptions.push(statusBarItem);
 }
 

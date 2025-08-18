@@ -286,7 +286,7 @@
           "name": "LLM Configuration",
           "type": "webview",
           "icon": "$(sparkle)",
-          "when": "true"
+          "when": "editorTextFocus && resourceExtname == '.ppnb'"
         }
       ]
     },
