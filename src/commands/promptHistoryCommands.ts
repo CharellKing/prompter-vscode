@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as crypto from 'crypto';
 
 interface PromptHistoryItem {
     content: string;
@@ -55,6 +56,12 @@ class PromptHistoryManager {
                     case 'selectPrompt':
                         this.insertPromptToCell(cell, message.prompt);
                         break;
+                    case 'resetPrompt':
+                        this.resetPromptToCell(cell, message.prompt, message.md5);
+                        break;
+                    case 'deletePrompt':
+                        this.deletePromptFromHistory(cell, message.md5);
+                        break;
                 }
             }
         );
@@ -64,6 +71,125 @@ class PromptHistoryManager {
         });
     }
 
+    /**
+     * Resets the cell content to a historical prompt version
+     * Saves the current content to history before replacing it
+     */
+    private async resetPromptToCell(cell: vscode.NotebookCell, prompt: string, md5: string) {
+        try {
+            // First save the current content to history
+            await this.saveCurrentContentToHistory(cell);
+            
+            // Then replace the cell content with the historical prompt
+            await this.insertPromptToCell(cell, prompt);
+            
+            // Show confirmation message
+            vscode.window.showInformationMessage('Prompt reset to historical version. Current version saved to history.');
+            
+            // Refresh the history panel
+            this.refreshHistoryPanel(cell);
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to reset prompt: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    
+    /**
+     * Deletes a prompt history item from the cell's metadata
+     */
+    private async deletePromptFromHistory(cell: vscode.NotebookCell, md5: string) {
+        try {
+            // Get current metadata
+            const metadata = cell.metadata ? { ...cell.metadata } : {};
+            const history = [...(metadata.history || [])];
+            
+            // Find the index of the item to delete
+            const itemIndex = history.findIndex((item: any) => item.md5 === md5);
+            
+            if (itemIndex === -1) {
+                throw new Error('History item not found');
+            }
+            
+            // Remove the item
+            history.splice(itemIndex, 1);
+            
+            // Update metadata
+            metadata.history = history;
+            
+            // Apply the metadata update
+            const edit = new vscode.WorkspaceEdit();
+            const notebookEdit = vscode.NotebookEdit.updateCellMetadata(cell.index, metadata);
+            edit.set(cell.notebook.uri, [notebookEdit]);
+            await vscode.workspace.applyEdit(edit);
+            
+            // Show confirmation message
+            vscode.window.showInformationMessage('Prompt history item deleted.');
+            
+            // Refresh the history panel
+            this.refreshHistoryPanel(cell);
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to delete history item: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    
+    /**
+     * Saves the current cell content to the history metadata
+     * Checks if the content already exists in history to avoid duplicates
+     */
+    private async saveCurrentContentToHistory(cell: vscode.NotebookCell) {
+        try {
+            const currentContent = cell.document.getText();
+            
+            // Create MD5 hash of the content for identification
+            const md5Hash = crypto.createHash('md5').update(currentContent).digest('hex');
+            
+            // Get current metadata
+            const metadata = cell.metadata ? { ...cell.metadata } : {};
+            const history = [...(metadata.history || [])];
+            
+            // Check if this content already exists in history
+            const existingItemIndex = history.findIndex((item: any) => 
+                item.md5 === md5Hash || item.content === currentContent
+            );
+            
+            // If content already exists in history, don't add it again
+            if (existingItemIndex !== -1) {
+                return; // Content already exists in history, no need to add it again
+            }
+            
+            // Create history item
+            const historyItem = {
+                content: currentContent,
+                timestamp: new Date().toISOString(),
+                md5: md5Hash
+            };
+            
+            // Add new history item
+            history.push(historyItem);
+            
+            // Update metadata
+            metadata.history = history;
+            
+            // Apply the metadata update
+            const edit = new vscode.WorkspaceEdit();
+            const notebookEdit = vscode.NotebookEdit.updateCellMetadata(cell.index, metadata);
+            edit.set(cell.notebook.uri, [notebookEdit]);
+            await vscode.workspace.applyEdit(edit);
+        } catch (error) {
+            throw new Error(`Failed to save current content to history: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+    
+    /**
+     * Refreshes the history panel with updated content
+     */
+    private refreshHistoryPanel(cell: vscode.NotebookCell) {
+        if (this.panel) {
+            const historyItems = this.getHistoryFromCell(cell);
+            this.currentCellContent = cell.document.getText();
+            this.panel.webview.html = this.getWebviewContent(historyItems);
+        }
+    }
+    
     private async insertPromptToCell(cell: vscode.NotebookCell, prompt: string) {
         try {
             const edit = new vscode.WorkspaceEdit();
@@ -106,9 +232,17 @@ class PromptHistoryManager {
                 const diffHtml = this.generateDiffHtml(item.content, currentCellContent);
                 
                 return `
-                    <div class="history-item" onclick="selectPrompt(\`${this.escapeForJs(item.content)}\`)">
+                    <div class="history-item" data-md5="${this.escapeHtml(item.md5)}">
                         <div class="timestamp">${this.escapeHtml(formattedTime)}</div>
                         <div class="diff-container">${diffHtml}</div>
+                        <div class="history-item-actions">
+                            <button class="action-button reset-button" title="Reset to this version (saves current as history)" onclick="resetPrompt(\`${this.escapeForJs(item.content)}\`, '${item.md5}')">
+                                <span class="button-icon">↺</span> Reset
+                            </button>
+                            <button class="action-button delete-button" title="Delete this history item" onclick="confirmDelete('${item.md5}')">
+                                <span class="button-icon">🗑️</span> Delete
+                            </button>
+                        </div>
                     </div>
                 `;
             })
@@ -209,6 +343,95 @@ class PromptHistoryManager {
                         color: var(--vscode-editor-foreground);
                     }
                     
+                    .history-item-actions {
+                        display: none;
+                        margin-top: 10px;
+                        gap: 8px;
+                        justify-content: flex-end;
+                    }
+                    
+                    .history-item:hover .history-item-actions {
+                        display: flex;
+                    }
+                    
+                    .action-button {
+                        background-color: var(--vscode-button-secondaryBackground);
+                        color: var(--vscode-button-secondaryForeground);
+                        border: none;
+                        border-radius: 4px;
+                        padding: 4px 8px;
+                        font-size: 12px;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                        transition: background-color 0.2s;
+                    }
+                    
+                    .action-button:hover {
+                        background-color: var(--vscode-button-secondaryHoverBackground);
+                    }
+                    
+                    .reset-button {
+                        background-color: var(--vscode-button-background);
+                        color: var(--vscode-button-foreground);
+                    }
+                    
+                    .reset-button:hover {
+                        background-color: var(--vscode-button-hoverBackground);
+                    }
+                    
+                    .delete-button {
+                        background-color: var(--vscode-errorForeground);
+                        color: white;
+                    }
+                    
+                    .delete-button:hover {
+                        background-color: #d32f2f;
+                    }
+                    
+                    .button-icon {
+                        font-size: 14px;
+                    }
+                    
+                    .modal-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background-color: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1000;
+                        display: none;
+                    }
+                    
+                    .modal {
+                        background-color: var(--vscode-editor-background);
+                        border-radius: 6px;
+                        padding: 16px;
+                        width: 300px;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                    }
+                    
+                    .modal-title {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin-bottom: 12px;
+                    }
+                    
+                    .modal-message {
+                        margin-bottom: 16px;
+                    }
+                    
+                    .modal-actions {
+                        display: flex;
+                        justify-content: flex-end;
+                        gap: 8px;
+                    }
+                    
                     .empty-state {
                         text-align: center;
                         color: var(--vscode-descriptionForeground);
@@ -238,8 +461,20 @@ class PromptHistoryManager {
                 ${historyItems.length > 0 ? `<div class="history-count">${historyItems.length} prompt${historyItems.length === 1 ? '' : 's'} in history</div>` : ''}
                 ${historyItems.length > 0 ? historyHtml : '<div class="empty-state">No history available for this cell<br><small>Execute this prompt cell to start building history</small></div>'}
                 
+                <div class="modal-overlay" id="deleteConfirmModal">
+                    <div class="modal">
+                        <div class="modal-title">Delete History Item</div>
+                        <div class="modal-message">Are you sure you want to delete this history item? This action cannot be undone.</div>
+                        <div class="modal-actions">
+                            <button class="action-button" onclick="closeModal()">Cancel</button>
+                            <button class="action-button delete-button" id="confirmDeleteButton">Delete</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <script>
                     const vscode = acquireVsCodeApi();
+                    let itemToDeleteMd5 = null;
                     
                     function selectPrompt(prompt) {
                         vscode.postMessage({
@@ -247,6 +482,42 @@ class PromptHistoryManager {
                             prompt: prompt
                         });
                     }
+                    
+                    function resetPrompt(prompt, md5) {
+                        vscode.postMessage({
+                            command: 'resetPrompt',
+                            prompt: prompt,
+                            md5: md5
+                        });
+                    }
+                    
+                    function confirmDelete(md5) {
+                        itemToDeleteMd5 = md5;
+                        document.getElementById('deleteConfirmModal').style.display = 'flex';
+                        document.getElementById('confirmDeleteButton').onclick = () => {
+                            deletePrompt(md5);
+                            closeModal();
+                        };
+                    }
+                    
+                    function deletePrompt(md5) {
+                        vscode.postMessage({
+                            command: 'deletePrompt',
+                            md5: md5
+                        });
+                    }
+                    
+                    function closeModal() {
+                        document.getElementById('deleteConfirmModal').style.display = 'none';
+                        itemToDeleteMd5 = null;
+                    }
+                    
+                    // Close modal if clicking outside of it
+                    document.getElementById('deleteConfirmModal').addEventListener('click', (event) => {
+                        if (event.target === document.getElementById('deleteConfirmModal')) {
+                            closeModal();
+                        }
+                    });
                 </script>
             </body>
             </html>
