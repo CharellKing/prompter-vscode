@@ -1,5 +1,7 @@
 # Prompter - LLM Prompt Management for VSCode
 
+![Prompter Icon](images/1328x1328.png)
+
 Prompter is a powerful VSCode extension that brings Jupyter-like notebook functionality to LLM prompt engineering. Create, manage, and execute prompts against various LLM providers directly within your VSCode environment.
 
 ## Features
@@ -7,7 +9,7 @@ Prompter is a powerful VSCode extension that brings Jupyter-like notebook functi
 - 🤖 **Multi-LLM Support**: Connect to OpenAI, Anthropic, Deepseek, Qwen, Gemini, and Mistral
 - 📝 **Interactive Prompt Cells**: Create and manage prompt cells in a notebook interface
 - 💻 **Code Cell Integration**: Mix prompts with executable code cells for complete workflows
-- 📊 **Response History**: Track and review prompt response history
+- 📊 **Prompt History**: Track and review prompt history
 - 🔄 **Run Cells**: Execute individual cells or run all cells in sequence
 - 📁 **Notebook Format**: Save your prompt notebooks as `.ppnb` files
 - 🎨 **Syntax Highlighting**: Dedicated syntax highlighting for prompt content
@@ -55,11 +57,11 @@ Prompter is a powerful VSCode extension that brings Jupyter-like notebook functi
 
 ### Prompt History
 
-Access your prompt history by clicking the history icon on any prompt cell. This allows you to review previous responses and iterations of your prompts.
+Access your prompt history by clicking the history icon on any prompt cell. This allows you to review previous prompts and iterations of your prompts.
 
 ## Example Workflows
 
-- **Prompt Engineering**: Iterate on prompts to get the best responses from LLMs
+- **Prompt Engineering**: Iterate on prompts to get the best prompt from LLMs
 - **Code Generation**: Generate code with LLMs and test it in code cells
 - **Documentation**: Create documentation with LLM assistance
 - **Data Analysis**: Combine prompt cells with code cells for interactive data analysis
