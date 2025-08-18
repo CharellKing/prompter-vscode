@@ -8,7 +8,7 @@ interface PPNBCell {
         [key: string]: any;
     };
     source: string[];
-    language?: string; // 添加语言字段
+    language?: string; // Add language field
     outputs?: any[];
     execution_count?: number | null;
 }
@@ -44,15 +44,15 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
     }
 
     private stringToSource(content: string): string[] {
-        // 将字符串按行分割，保留换行符
+        // Split string by lines, preserving line breaks
         const lines = content.split('\n');
         return lines.map((line, index) => {
-            // 除了最后一行，其他行都加上换行符
+            // Add line break to all lines except the last one
             return index < lines.length - 1 ? line + '\n' : line;
         });
     }
 
-    // 将保存文件中的输出转换为 VS Code Notebook 输出对象
+    // Convert outputs from saved file to VS Code Notebook output objects
     private toNotebookOutputs(outputs: any[]): vscode.NotebookCellOutput[] {
         try {
             return outputs.map((out: any) => {
@@ -114,7 +114,7 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                     language = 'prompt';
                 } else {
                     cellKind = vscode.NotebookCellKind.Code;
-                    // 优先使用保存的语言信息，否则使用默认值
+                    // Prioritize saved language information, otherwise use default value
                     language = cell.language || notebook?.metadata?.language_info?.name || 'javascript';
                 }
 
@@ -126,9 +126,13 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
 
                 cellData.metadata = {
                     id: cell.id,
-                    customCellKind: cell.cell_type === 'prompt' ? 'prompt' : undefined,
                     ...cell.metadata
                 };
+
+                // Set execution count for prompt cells in metadata
+                if (cell.cell_type === 'code' && cell.language === 'prompt') {
+                    cellData.metadata.execution_count = cell.execution_count || null;
+                }
 
                 if (cell.outputs && Array.isArray(cell.outputs) && cell.outputs.length > 0) {
                     try {
@@ -140,15 +144,6 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
 
                 return cellData;
             });
-        }
-
-        // 如果没有cells，创建一个默认的代码cell
-        if (cells.length === 0) {
-            cells.push(new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Code,
-                '// Welcome to Prompter!\n// Press Ctrl+Enter to run this cell\nconsole.log("Hello, World!");',
-                'javascript'
-            ));
         }
 
         const notebookData = new vscode.NotebookData(cells);
@@ -165,17 +160,12 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
         const cells: PPNBCell[] = cellArray.map(cell => {
             let cellType: 'code' | 'markdown' | 'prompt';
             
-            // Determine cell type based on customCellKind metadata or fallback to built-in kind
-            if (cell.metadata?.customCellKind === 'prompt') {
-                cellType = 'prompt';
-            } else if (cell.metadata?.customCellKind === 'output') {
-                cellType = 'code'; // Output cells are stored as code cells
-            } else if (cell.metadata?.customCellKind === 'error') {
-                cellType = 'markdown'; // Error cells are stored as markdown cells
-            } else if (cell.kind === vscode.NotebookCellKind.Code) {
+            if (cell.languageId === 'prompt') {
                 cellType = 'code';
+            } else if (cell.languageId === 'markdown') {
+                cellType = 'markdown'; // Output cells are stored as code cells
             } else {
-                cellType = 'markdown';
+                cellType = 'code';
             }
             
             const ppnbCell: PPNBCell = {
@@ -185,19 +175,17 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                 source: this.stringToSource(cell.value)
             };
 
-            // 为代码单元格保存语言信息
+            // Save language information for code cells
             if (cellType === 'code') {
                 ppnbCell.language = cell.languageId;
             }
 
-            if (cellType === 'code' || cellType === 'prompt') {
-                ppnbCell.execution_count = null;
-                
-                // Properly handle outputs
+            if (cellType === 'code') {                
+                // Properly handle outputs with prompt execution metadata
                 if (cell.outputs && cell.outputs.length > 0) {
                     ppnbCell.outputs = cell.outputs.map(output => {
                         // Convert each output item to the expected format
-                        return {
+                        const outputData = {
                             output_type: 'execute_result',
                             data: (output.items ?? []).reduce((data: any, item) => {
                                 // Safely decode the output data
@@ -209,16 +197,26 @@ export class PrompterNotebookProvider implements vscode.NotebookSerializer {
                                 }
                                 return data;
                             }, {}),
-                            metadata: {},
+                            metadata: output.metadata || {},
                             execution_count: null
                         };
+                        
+                        // For prompt cells, ensure execution metadata is preserved
+                        if (cell.languageId === 'prompt' && output.metadata?.promptExecution) {
+                            outputData.metadata = {
+                                ...outputData.metadata,
+                                promptExecution: output.metadata.promptExecution
+                            };
+                        }
+                        
+                        return outputData;
                     });
                 } else {
                     ppnbCell.outputs = [];
                 }
             }
 
-            // 移除id从metadata中，因为它已经是顶级属性
+            // Remove id from metadata since it's already a top-level property
             delete ppnbCell.metadata.id;
 
             return ppnbCell;
