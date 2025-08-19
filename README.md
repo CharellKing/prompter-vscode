@@ -6,6 +6,15 @@
 
 Prompter is a powerful VSCode extension that brings Jupyter-like notebook functionality to LLM prompt engineering. Create, manage, and execute prompts against various LLM providers directly within your VSCode environment.
 
+## Video Tutorial
+
+<p align="center">
+<a href="https://youtu.be/bdLa0q7EfuI">
+  <img src="manual/How-to-use-prompter-runner.jpg" alt="How to use prompter" width="480" height="360" border="10" />
+</a>
+</p>
+
+
 ## Features
 
 - 🤖 **Multi-LLM Support**: Connect to OpenAI, Anthropic, Deepseek, Qwen, Gemini, and Mistral
