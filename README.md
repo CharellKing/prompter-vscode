@@ -34,7 +34,7 @@ https://marketplace.visualstudio.com/items?itemName=andyqu.prompter-vscode&ssr=f
 3. Enter your API key for the selected provider
 4. Configure additional parameters like temperature and max tokens
 
-![Configure LLM] (manual/configure-llm.gif)
+![Configure LLM](manual/configure-llm.gif)
 
 ### Creating a New Notebook
 
@@ -43,7 +43,7 @@ https://marketplace.visualstudio.com/items?itemName=andyqu.prompter-vscode&ssr=f
 3. A new `.ppnb` file without any cells.
 4. Click the prompt button to create prompt cell.
 
-![Create Prompter Notebook](manual/create-notebook.gif)
+![Create Prompter Notebook](manual/use-the-prompt-cell.gif)
 
 
 ## Development
@@ -85,6 +85,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [ ] Add support for more LLM providers
 - [ ] Implement prompt templates and variables
 - [ ] Add visualization tools for token usage and costs
-- [ ] Enable sharing of prompt notebooks
 - [ ] Implement collaborative prompt engineering features
 - [ ] Add export functionality (HTML, PDF)
