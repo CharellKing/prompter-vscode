@@ -22,14 +22,6 @@
   ],
   "activationEvents": [
     "onCommand:prompter.notebook.createNotebook",
-    "onCommand:prompter.notebook.runCell",
-    "onCommand:prompter.cell.insertCodeCellAbove",
-    "onCommand:prompter.cell.insertCodeCellBelow",
-    "onCommand:prompter.cell.showPromptHistory",
-    "onLanguage:prompt",
-    "onNotebook:prompter-notebook",
-    "onCommand:prompter.notebook.saveNotebook",
-    "onCommand:prompter.llm.configureLLM",
     "onCommand:prompter.llm.openLLMConfig"
   ],
   "main": "./out/extension.js",
@@ -163,7 +155,7 @@
       },
       {
         "command": "prompter.notebook.createNotebook",
-        "title": "Create New Prompter Notebook",
+        "title": "Create Prompter Notebook",
         "category": "Prompter"
       },
       {
@@ -174,21 +166,6 @@
       {
         "command": "prompter.notebook.runAllCells",
         "title": "Run All Cells",
-        "category": "Prompter"
-      },
-      {
-        "command": "prompter.llm.setProvider",
-        "title": "Set LLM Provider",
-        "category": "Prompter"
-      },
-      {
-        "command": "prompter.llm.setApiKey",
-        "title": "Set API Key for Current Provider",
-        "category": "Prompter"
-      },
-      {
-        "command": "prompter.llm.setModel",
-        "title": "Set LLM Model",
         "category": "Prompter"
       },
       {
@@ -206,11 +183,6 @@
         "title": "Open LLM Configuration Page",
         "category": "Prompter",
         "icon": "$(settings-gear)"
-      },
-      {
-        "command": "prompter.llm.llmConfigFocus",
-        "title": "Focus LLM Configuration Panel",
-        "category": "Prompter"
       },
       {
         "command": "prompter.language.setDefaultCodeLanguage",
@@ -305,8 +277,7 @@
           "id": "prompter.llmConfig",
           "name": "LLM Configuration",
           "type": "webview",
-          "icon": "$(sparkle)",
-          "when": "editorTextFocus && resourceExtname == '.ppnb'"
+          "icon": "$(sparkle)"
         }
       ]
     },

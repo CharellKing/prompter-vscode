@@ -19,19 +19,18 @@ Prompter is a powerful VSCode extension that brings Jupyter-like notebook functi
 
 ## Installation
 
-1. Clone this repository
-2. Open the project in VSCode
-3. Run `npm install` to install dependencies
-4. Press `F5` to launch a new Extension Development Host window
-5. In the new window, you can test the extension
+### Install via VSCode Marketplace
+
+https://marketplace.visualstudio.com/items?itemName=andyqu.prompter-vscode&ssr=false#review-details
 
 ## Usage
 
 ### Creating a New Notebook
 
 1. Open the Command Palette (`Ctrl+Shift+P`)
-2. Search for "Create New Prompter Notebook"
+2. Search for "Create Prompter Notebook"
 3. A new `.ppnb` file will be created with a sample prompt cell
+
 
 ### Working with Cells
 
