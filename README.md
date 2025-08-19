@@ -19,27 +19,13 @@ Prompter is a powerful VSCode extension that brings Jupyter-like notebook functi
 
 ## Installation
 
-1. Clone this repository
-2. Open the project in VSCode
-3. Run `npm install` to install dependencies
-4. Press `F5` to launch a new Extension Development Host window
-5. In the new window, you can test the extension
+### Install via VSCode Marketplace
+
+https://marketplace.visualstudio.com/items?itemName=andyqu.prompter-vscode&ssr=false#review-details
+
+![Prompter Runner Download Process](manual/download-prompter-runner.gif)
 
 ## Usage
-
-### Creating a New Notebook
-
-1. Open the Command Palette (`Ctrl+Shift+P`)
-2. Search for "Create New Prompter Notebook"
-3. A new `.ppnb` file will be created with a sample prompt cell
-
-### Working with Cells
-
-- **Add Prompt Cell**: Click the "Prompt" button in the notebook toolbar
-- **Add Code Cell**: Click the "Code" button in the notebook toolbar
-- **Add Markdown Cell**: Click the "Markdown" button in the notebook toolbar
-- **Run Current Cell**: `Ctrl+Enter`
-- **Run All Cells**: `Ctrl+Shift+Enter`
 
 ### Configuring LLM Providers
 
@@ -48,26 +34,17 @@ Prompter is a powerful VSCode extension that brings Jupyter-like notebook functi
 3. Enter your API key for the selected provider
 4. Configure additional parameters like temperature and max tokens
 
-### Supported LLM Providers
+![Configure LLM] (manual/configure-llm.gif)
 
-- **OpenAI**: GPT-3.5, GPT-4, etc.
-- **Anthropic**: Claude models
-- **Deepseek**: Deepseek models
-- **Qwen**: Qwen models
-- **Gemini**: Google Gemini models
-- **Mistral**: Mistral AI models
+### Creating a New Notebook
 
-### Prompt History
+1. Open the Command Palette (`Ctrl+Shift+P`)
+2. Search for "Create Prompter Notebook"
+3. A new `.ppnb` file without any cells.
+4. Click the prompt button to create prompt cell.
 
-Access your prompt history by clicking the history icon on any prompt cell. This allows you to review previous prompts and iterations of your prompts.
+![Create Prompter Notebook](manual/create-notebook.gif)
 
-## Example Workflows
-
-- **Prompt Engineering**: Iterate on prompts to get the best prompt from LLMs
-- **Code Generation**: Generate code with LLMs and test it in code cells
-- **Documentation**: Create documentation with LLM assistance
-- **Data Analysis**: Combine prompt cells with code cells for interactive data analysis
-- **Learning**: Use as a learning tool to understand LLM capabilities and limitations
 
 ## Development
 

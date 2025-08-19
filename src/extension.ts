@@ -15,12 +15,7 @@ import {
     registerRunAllCellsCommand,
     registerSaveNotebookCommand,
     registerSetCellTypeCommand,
-    registerSetProviderCommand,
-    registerSetApiKeyCommand,
-    registerSetModelCommand,
-    registerConfigureLLMCommand,
     registerOpenLLMConfigCommand,
-    registerFocusLLMConfigCommand,
     registerSetDefaultCodeLanguageCommand
 } from './commands';
 import {
@@ -33,38 +28,6 @@ export let cellExecutor: CellExecutor;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
-
-
-    // context.subscriptions.push(
-    //     vscode.notebooks.registerNotebookCellStatusBarItemProvider('prompter-notebook', {
-    //     provideCellStatusBarItems(cell: vscode.NotebookCell, token: vscode.CancellationToken): vscode.NotebookCellStatusBarItem[] {
-    //         return [
-    //         {
-    //             text: 'Prompt',
-    //             command: 'prompter.cell.insertPromptCellBelow',
-    //             tooltip: 'Insert a new Prompt cell below',
-    //             alignment: vscode.NotebookCellStatusBarAlignment.Left
-    //         }
-    //         ];
-    //     }
-    //     })
-    // );
-    
-    // Listen for cell language changes
-    // context.subscriptions.push(
-    //     vscode.workspace.onDidChangeNotebookDocument(async event => {
-    //         if (event.notebook.notebookType !== 'prompter-notebook') {
-    //             return;
-    //         }
-            
-    //         // Check each changed cell
-    //         for (const cellChange of event.cellChanges) {                    
-    //                 const cell = cellChange.cell;                    
-    //                 // Use CellExecutor's applyLanguageModeChange method to update the cell
-    //                 await cellExecutor.applyLanguageModeChange(cell);
-    //         }
-    //     })
-    // );
 
     // Register language configuration
     context.subscriptions.push(
@@ -153,12 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerRunCellCommand(context, cellExecutor);
     registerRunAllCellsCommand(context, cellExecutor);
     registerSaveNotebookCommand(context);
-    registerSetProviderCommand(context);
-    registerSetApiKeyCommand(context);
-    registerSetModelCommand(context);
-    registerConfigureLLMCommand(context);
     registerOpenLLMConfigCommand(context, llmConfigProvider);
-    registerFocusLLMConfigCommand(context, llmConfigProvider);
     registerSetDefaultCodeLanguageCommand(context);
     registerSetCellTypeCommand(context);
     registerPromptHistoryCommands(context);

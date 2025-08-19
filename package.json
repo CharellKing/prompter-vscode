@@ -2,7 +2,7 @@
   "name": "prompter-vscode",
   "displayName": "Prompter - Prompt Runner",
   "description": "A VSCode extension for creating, managing, and executing LLM prompts in a notebook-like interface, similar to Jupyter notebooks",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "andyqu",
   "repository": {
     "type": "git",
@@ -22,14 +22,6 @@
   ],
   "activationEvents": [
     "onCommand:prompter.notebook.createNotebook",
-    "onCommand:prompter.notebook.runCell",
-    "onCommand:prompter.cell.insertCodeCellAbove",
-    "onCommand:prompter.cell.insertCodeCellBelow",
-    "onCommand:prompter.cell.showPromptHistory",
-    "onLanguage:prompt",
-    "onNotebook:prompter-notebook",
-    "onCommand:prompter.notebook.saveNotebook",
-    "onCommand:prompter.llm.configureLLM",
     "onCommand:prompter.llm.openLLMConfig"
   ],
   "main": "./out/extension.js",
@@ -163,7 +155,7 @@
       },
       {
         "command": "prompter.notebook.createNotebook",
-        "title": "Create New Prompter Notebook",
+        "title": "Create Prompter Notebook",
         "category": "Prompter"
       },
       {
@@ -177,28 +169,8 @@
         "category": "Prompter"
       },
       {
-        "command": "prompter.llm.setProvider",
-        "title": "Set LLM Provider",
-        "category": "Prompter"
-      },
-      {
-        "command": "prompter.llm.setApiKey",
-        "title": "Set API Key for Current Provider",
-        "category": "Prompter"
-      },
-      {
-        "command": "prompter.llm.setModel",
-        "title": "Set LLM Model",
-        "category": "Prompter"
-      },
-      {
         "command": "prompter.notebook.saveNotebook",
         "title": "Save Notebook",
-        "category": "Prompter"
-      },
-      {
-        "command": "prompter.llm.configureLLM",
-        "title": "Configure LLM Settings",
         "category": "Prompter"
       },
       {
@@ -206,11 +178,6 @@
         "title": "Open LLM Configuration Page",
         "category": "Prompter",
         "icon": "$(settings-gear)"
-      },
-      {
-        "command": "prompter.llm.llmConfigFocus",
-        "title": "Focus LLM Configuration Panel",
-        "category": "Prompter"
       },
       {
         "command": "prompter.language.setDefaultCodeLanguage",
@@ -305,8 +272,7 @@
           "id": "prompter.llmConfig",
           "name": "LLM Configuration",
           "type": "webview",
-          "icon": "$(sparkle)",
-          "when": "editorTextFocus && resourceExtname == '.ppnb'"
+          "icon": "$(sparkle)"
         }
       ]
     },
