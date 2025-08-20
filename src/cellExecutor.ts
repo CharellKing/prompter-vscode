@@ -3,7 +3,8 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios from 'axios';
-import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import crypto, { randomUUID } from 'crypto';
 import { UniversalLLMProvider, LLMProvider, Message } from './llm/llmProvider';
 import { TypeChatAdapterFactory, SupportedLLMProviders, ThirdPartyLLMConfig, ChatResponse } from './llm';
 
@@ -457,7 +458,7 @@ export class CellExecutor {
                     // Additional properties for serialization/deserialization
                     cellType: 'prompt',
                     executionId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    format: chatResponse.format || 'text'
+                    format: chatResponse.format || 'text',
                 }
             };
 
@@ -476,7 +477,7 @@ export class CellExecutor {
         }
 
         // Use a more direct approach to set outputs
-        await this.applyCell(cell, prompt, outputs);
+        await this.applyCell(cell, prompt, outputs， chatResponse.tags || []);
     }
 
     private detectMarkdown(content: string): boolean {
@@ -495,7 +496,7 @@ export class CellExecutor {
         return markdownPatterns.some(pattern => pattern.test(content));
     }
 
-    private async applyCell(cell: vscode.NotebookCell, code: string, outputs: vscode.NotebookCellOutput[]) {
+    private async applyCell(cell: vscode.NotebookCell, code: string, outputs: vscode.NotebookCellOutput[], tags: string[] = []) {
         // Ensure cell index is valid (non-negative)
         const cellIndex = cell.index;
         const notebookUri = cell.notebook.uri;
@@ -521,6 +522,7 @@ export class CellExecutor {
         if (!hasSameHistory) {
             // If there's new history, update the history records
             history.push({
+                id: uuidv4(),
                 content: code,
                 timestamp: currentTime,
                 md5: currentContentMd5,
@@ -543,7 +545,8 @@ export class CellExecutor {
             execution_count: executionCount,
             history: history,
             hasError: false,
-            outputsReadonly: true  // Set output as read-only
+            outputsReadonly: true,  // Set output as read-only
+            tags: tags,
         };
         
         const nbEdit = vscode.NotebookEdit.replaceCells(new vscode.NotebookRange(cell.index, cell.index + 1), [cellData]);
@@ -572,6 +575,6 @@ export class CellExecutor {
             ]));
         }
 
-        return await this.applyCell(cell, code, outputs);
+        return await this.applyCell(cell, code, outputs, []);
     }
 }

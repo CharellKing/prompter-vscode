@@ -32,6 +32,7 @@ function createJsonTranslator<T>(
 // TypeChat compatible ChatResponse interface
 export interface ChatResponse {
     format: "plaintext" | "markdown";
+    tags?: string[]; // max tags elements: 3, every tag length: 15
     content: string;
     success: boolean;
     error?: string;
