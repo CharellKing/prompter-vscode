@@ -5,8 +5,8 @@ import * as fs from 'fs';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import crypto, { randomUUID } from 'crypto';
-import { UniversalLLMProvider, LLMProvider, Message } from './llm/llmProvider';
-import { TypeChatAdapterFactory, SupportedLLMProviders, ThirdPartyLLMConfig, ChatResponse } from './llm';
+import {  executeCellPrompt, PromptCellChatResponse } from './llm';
+import { WrapChatResponse } from './llm/run';
 
 // Define custom cell kinds (must match the enum in extension.ts)
 export const enum PrompterCellKind {
@@ -166,7 +166,7 @@ export class CellExecutor {
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
                 // Update execution history and count
-                const chatResponse = await this.callLLM(code);
+                const chatResponse = await executeCellPrompt(code);
                 await this.updateCellOutputWithTypeChat(cell, code, chatResponse);
             } else {
                 // Execute code for other languages
@@ -252,76 +252,6 @@ export class CellExecutor {
             this.outputChannel.appendLine(`Created error output cell at index ${insertIndex}`);
         } catch (error) {
             this.outputChannel.appendLine(`Error creating error output cell: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
-    private async callLLM(prompt: string): Promise<ChatResponse & { executionMetadata: any }> {
-        const startTime = new Date();
-        
-        try {
-            // Get configuration
-            const config = vscode.workspace.getConfiguration('prompter');
-            const provider = config.get<string>('llmProvider') || 'openai';
-            const model = config.get<string>('llmModel') || 'gpt-3.5-turbo';
-            const apiKey = config.get<string>(`${provider}ApiKey`);
-            
-            if (!apiKey) {
-                throw new Error(`${provider} API key not configured. Please set it in the extension settings.`);
-            }
-            
-            // Create TypeChat adapter configuration
-            const typeChatConfig: ThirdPartyLLMConfig = {
-                provider: provider as SupportedLLMProviders,
-                model: model,
-                apiKey: apiKey,
-                temperature: config.get<number>('temperature') || 0.7,
-                maxTokens: config.get<number>('maxTokens') || 1000,
-                topP: 1.0
-            };
-            
-            // Create TypeChat adapter
-            const typeChatAdapter = TypeChatAdapterFactory.create(typeChatConfig);
-            
-            // Use TypeChat adapter to call LLM and get formatted ChatResponse
-            const chatResponse: ChatResponse = await typeChatAdapter.complete(prompt);
-            
-            const endTime = new Date();
-            
-            // Check if response is successful
-            if (!chatResponse.success) {
-                throw new Error(`LLM API error: ${chatResponse.error}`);
-            }
-            
-            // Add execution metadata
-            const executionMetadata = {
-                model: model,
-                provider: provider,
-                startTime: startTime.toISOString(),
-                endTime: endTime.toISOString(),
-                duration: endTime.getTime() - startTime.getTime(),
-                temperature: config.get<number>('temperature') || 0.7,
-                maxTokens: config.get<number>('maxTokens') || 1000
-            };
-            
-            return {
-                ...chatResponse,
-                executionMetadata
-            };
-        } catch (error) {
-            const endTime = new Date();
-            const executionMetadata = {
-                model: 'unknown',
-                provider: 'unknown',
-                startTime: startTime.toISOString(),
-                endTime: endTime.toISOString(),
-                duration: endTime.getTime() - startTime.getTime(),
-                error: true
-            };
-            
-            if (isAxiosError(error) && error.response) {
-                throw new Error(`LLM API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
-            }
-            throw new Error(`Error calling LLM API: ${String(error)}`);
         }
     }
 
@@ -440,44 +370,43 @@ export class CellExecutor {
         }
     }
 
-    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, prompt: string, chatResponse: ChatResponse & { executionMetadata: any }) {
+    private async updateCellOutputWithTypeChat(cell: vscode.NotebookCell, prompt: string, chatResponse: WrapChatResponse<PromptCellChatResponse>) {
         const outputs: vscode.NotebookCellOutput[] = [];
 
-        if (chatResponse.content) {
+        if (chatResponse.data.response) {
             // Create output metadata with execution details for serialization
             const outputMetadata = {
                 promptExecution: {
-                    model: chatResponse.executionMetadata.model,
-                    provider: chatResponse.executionMetadata.provider,
-                    startTime: chatResponse.executionMetadata.startTime,
-                    endTime: chatResponse.executionMetadata.endTime,
-                    duration: chatResponse.executionMetadata.duration,
-                    temperature: chatResponse.executionMetadata.temperature,
-                    maxTokens: chatResponse.executionMetadata.maxTokens,
-                    usage: chatResponse.usage,
+                    org: chatResponse.org,
+                    model: chatResponse.model,
+                    startTime: chatResponse.startTime,
+                    endTime: chatResponse.endTime,
+                    duration: chatResponse.duration,
+                    temperature: chatResponse.temperature,
+                    maxTokens: chatResponse.maxTokens,
                     // Additional properties for serialization/deserialization
                     cellType: 'prompt',
                     executionId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    format: chatResponse.format || 'text',
+                    format: chatResponse.data.format || 'plaintext',
                 }
             };
 
             // Check if content appears to be markdown            
-            if (chatResponse.format?.toLowerCase() === 'markdown'){
+            if (chatResponse.data.format.toLowerCase() === 'markdown'){
                 // Create markdown output for better rendering
                 outputs.push(new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.text(chatResponse.content, 'text/markdown')
+                    vscode.NotebookCellOutputItem.text(chatResponse.data.response, 'text/markdown')
                 ], outputMetadata));
             } else {
                 // Create plain text output
                 outputs.push(new vscode.NotebookCellOutput([
-                    vscode.NotebookCellOutputItem.text(chatResponse.content, 'text/plain')
+                    vscode.NotebookCellOutputItem.text(chatResponse.data.response, 'text/plain')
                 ], outputMetadata));
             }
         }
 
         // Use a more direct approach to set outputs
-        await this.applyCell(cell, prompt, outputs， chatResponse.tags || []);
+        await this.applyCell(cell, prompt, outputs, chatResponse.data.tags || []);
     }
 
     private detectMarkdown(content: string): boolean {

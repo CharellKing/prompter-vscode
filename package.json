@@ -196,6 +196,12 @@
         "title": "Show Prompt History",
         "category": "Prompter",
         "icon": "$(history)"
+      },
+      {
+        "command": "prompter.cell.addTag",
+        "title": "Add Tag to Cell",
+        "category": "Prompter",
+        "icon": "$(tag)"
       }
     ],
     "languages": [
@@ -316,6 +322,11 @@
           "command": "prompter.notebook.setCellType",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@5"
+        },
+        {
+          "command": "prompter.cell.addTag",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "inline@6"
         }
       ]
     }
