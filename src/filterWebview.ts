@@ -9,6 +9,63 @@ export class FilterWebviewProvider implements vscode.WebviewViewProvider {
 
     constructor(private readonly _context: vscode.ExtensionContext) {
         this._extensionUri = _context.extensionUri;
+        
+        // Initialize by reading from active editor
+        this._initializeFromActiveEditor();
+        
+        // Listen for notebook changes to update the filter view
+        vscode.window.onDidChangeActiveNotebookEditor(() => {
+            this._initializeFromActiveEditor();
+        });
+        
+        // Listen for notebook document changes
+        vscode.workspace.onDidChangeNotebookDocument((e) => {
+            if (e.notebook.notebookType === 'prompter-notebook') {
+                this._initializeFromActiveEditor();
+            }
+        });
+    }
+    
+    private async _initializeFromActiveEditor() {
+        const activeNotebook = vscode.window.activeNotebookEditor?.notebook;
+        if (!activeNotebook || activeNotebook.notebookType !== 'prompter-notebook') {
+            return;
+        }
+        
+        // Collect all tags and prompts
+        this._allTags.clear();
+        this._allPrompts = [];
+        
+        for (let i = 0; i < activeNotebook.cellCount; i++) {
+            const cell = activeNotebook.cellAt(i);
+            
+            // Only process prompt cells
+            if (cell.kind === vscode.NotebookCellKind.Code && cell.document.languageId === 'prompt') {
+                const tags = this._getTagsFromCell(cell);
+                const promptId = cell.metadata?.id || `cell-${i}`;
+                const promptText = cell.document.getText().substring(0, 100) + (cell.document.getText().length > 100 ? '...' : '');
+                
+                // Add tags to the set
+                tags.forEach(tag => this._allTags.add(tag));
+                
+                // Add prompt to the list
+                this._allPrompts.push({
+                    id: promptId,
+                    index: i,
+                    text: promptText,
+                    tags: tags
+                });
+            }
+        }
+        
+        // If view is already initialized, update it
+        if (this._view) {
+            this._view.webview.postMessage({
+                command: 'updateData',
+                tags: Array.from(this._allTags),
+                prompts: this._allPrompts
+            });
+        }
     }
 
     public resolveWebviewView(
@@ -46,47 +103,8 @@ export class FilterWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     private async _updateFilterView() {
-        if (!this._view) {
-            return;
-        }
-
-        const activeNotebook = vscode.window.activeNotebookEditor?.notebook;
-        if (!activeNotebook || activeNotebook.notebookType !== 'prompter-notebook') {
-            return;
-        }
-
-        // Collect all tags and prompts
-        this._allTags.clear();
-        this._allPrompts = [];
-
-        for (let i = 0; i < activeNotebook.cellCount; i++) {
-            const cell = activeNotebook.cellAt(i);
-            
-            // Only process prompt cells
-            if (cell.kind === vscode.NotebookCellKind.Code && cell.document.languageId === 'prompt') {
-                const tags = this._getTagsFromCell(cell);
-                const promptId = cell.metadata?.id || `cell-${i}`;
-                const promptText = cell.document.getText().substring(0, 100) + (cell.document.getText().length > 100 ? '...' : '');
-                
-                // Add tags to the set
-                tags.forEach(tag => this._allTags.add(tag));
-                
-                // Add prompt to the list
-                this._allPrompts.push({
-                    id: promptId,
-                    index: i,
-                    text: promptText,
-                    tags: tags
-                });
-            }
-        }
-
-        // Send the data to the webview
-        this._view.webview.postMessage({
-            command: 'updateData',
-            tags: Array.from(this._allTags),
-            prompts: this._allPrompts
-        });
+        // Use the initialization method to update the view
+        await this._initializeFromActiveEditor();
     }
 
     private _getTagsFromCell(cell: vscode.NotebookCell): string[] {

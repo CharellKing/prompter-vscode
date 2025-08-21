@@ -280,7 +280,7 @@
       "activitybar": [
         {
           "id": "prompter-filter",
-          "title": "Prompter Filter",
+          "title": "Prompt Filter",
           "icon": "$(filter)"
         }
       ]
@@ -297,7 +297,7 @@
       "prompter-filter": [
         {
           "id": "prompter.filterView",
-          "name": "Prompt Filter",
+          "name": "Prompter Filter",
           "type": "webview",
           "icon": "$(filter)"
         }
