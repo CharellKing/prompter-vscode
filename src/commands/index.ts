@@ -6,4 +6,5 @@ export * from './notebookCommands';
 export * from './llmConfigCommands';
 export * from './languageCommands';
 export * from './tagCommands';
+export * from './filterCommands';
 

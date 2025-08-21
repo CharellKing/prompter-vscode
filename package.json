@@ -124,6 +124,12 @@
     },
     "commands": [
       {
+        "command": "prompter.notebook.toggleFilterPanel",
+        "title": "Filter Prompts",
+        "category": "Prompter",
+        "icon": "$(filter)"
+      },
+      {
         "command": "prompter.cell.insertPromptCellAbove",
         "title": "Insert Prompt Cell Above",
         "category": "Prompter",
@@ -270,6 +276,13 @@
           "title": "Prompter",
           "icon": "$(sparkle)"
         }
+      ],
+      "activitybar": [
+        {
+          "id": "prompter-filter",
+          "title": "Prompter Filter",
+          "icon": "$(filter)"
+        }
       ]
     },
     "views": {
@@ -280,8 +293,22 @@
           "type": "webview",
           "icon": "$(sparkle)"
         }
+      ],
+      "prompter-filter": [
+        {
+          "id": "prompter.filterView",
+          "name": "Prompt Filter",
+          "type": "webview",
+          "icon": "$(filter)"
+        }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "explorer",
+        "contents": "No filter results available."
+      }
+    ],
     "menus": {
       "editor/context": [
         {
@@ -291,6 +318,11 @@
         }
       ],
       "notebook/toolbar": [
+        {
+          "command": "prompter.notebook.toggleFilterPanel",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "navigation@1"
+        },
         {
           "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
