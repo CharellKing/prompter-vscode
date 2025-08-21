@@ -134,12 +134,20 @@ export class FilterWebviewProvider implements vscode.WebviewViewProvider {
         // Get the cell index
         const cellIndex = prompt.index;
         
-        // Reveal the cell
+        // Reveal the cell in the center of the editor
         const cell = activeNotebook.notebook.cellAt(cellIndex);
+        
+        // First select the cell
+        activeNotebook.selection = new vscode.NotebookRange(cellIndex, cellIndex + 1);
+        
+        // Then reveal it in the center of the editor
         activeNotebook.revealRange(
             new vscode.NotebookRange(cellIndex, cellIndex + 1),
-            vscode.NotebookEditorRevealType.Default
+            vscode.NotebookEditorRevealType.InCenter
         );
+        
+        // Focus on the cell
+        vscode.commands.executeCommand('notebook.cell.edit');
     }
 
     private _getHtmlForWebview(webview: vscode.Webview): string {
