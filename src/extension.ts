@@ -17,7 +17,7 @@ import {
     registerSetCellTypeCommand,
     registerOpenLLMConfigCommand,
     registerSetDefaultCodeLanguageCommand,
-    registerAddTagCommand
+    registerModifyTagCommand
 } from './commands';
 import {
     createNotebookController,
@@ -124,7 +124,7 @@ export function activate(context: vscode.ExtensionContext) {
     registerSetDefaultCodeLanguageCommand(context);
     registerSetCellTypeCommand(context);
     registerPromptHistoryCommands(context);
-    registerAddTagCommand(context);
+    registerModifyTagCommand(context);
 
     // Register status bar item to display current LLM model
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);

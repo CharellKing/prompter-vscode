@@ -40,10 +40,10 @@ export async function addTagsToCell(cell: vscode.NotebookCell, tags: string[]): 
 }
 
 /**
- * Command to add a tag to the current cell
+ * Command to modify tags of the current cell
  */
-export function registerAddTagCommand(context: vscode.ExtensionContext): void {
-    const command = vscode.commands.registerCommand('prompter.cell.addTag', async () => {
+export function registerModifyTagCommand(context: vscode.ExtensionContext): void {
+    const command = vscode.commands.registerCommand('prompter.cell.modifyTag', async () => {
         const editor = vscode.window.activeNotebookEditor;
         if (!editor || editor.notebook.notebookType !== 'prompter-notebook') {
             vscode.window.showErrorMessage('Please select a cell in a Prompter notebook');
@@ -59,22 +59,29 @@ export function registerAddTagCommand(context: vscode.ExtensionContext): void {
             return;
         }
         
-        // Ask for tag name
-        const tagName = await vscode.window.showInputBox({
-            prompt: 'Enter tag name (without # symbol)',
-            placeHolder: 'tag-name'
+        // Get the first selected cell to modify its tags
+        const cell = selectedCells[0];
+        const currentTags = cell.metadata?.tags || [];
+        
+        // Show input box with current tags pre-filled
+        const tagsInput = await vscode.window.showInputBox({
+            prompt: 'Modify tags (comma-separated, without # symbol)',
+            placeHolder: 'tag1, tag2, tag3',
+            value: currentTags.join(', ')
         });
         
-        if (!tagName) {
+        if (tagsInput === undefined) {
             return; // User cancelled
         }
         
-        // Add tag to each selected cell
-        for (const cell of selectedCells) {
-            const currentTags = cell.metadata?.tags || [];
-            const newTags = [...new Set([...currentTags, tagName])]; // Ensure uniqueness
-            await addTagsToCell(cell, newTags);
-        }
+        // Parse the input into an array of tags
+        const newTags = tagsInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+        
+        // Update tags for the cell
+        await addTagsToCell(cell, newTags);
     });
     
     context.subscriptions.push(command);

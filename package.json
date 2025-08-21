@@ -198,8 +198,8 @@
         "icon": "$(history)"
       },
       {
-        "command": "prompter.cell.addTag",
-        "title": "Add Tag to Cell",
+        "command": "prompter.cell.modifyTag",
+        "title": "Modify Tags",
         "category": "Prompter",
         "icon": "$(tag)"
       }
@@ -324,8 +324,8 @@
           "group": "inline@5"
         },
         {
-          "command": "prompter.cell.addTag",
-          "when": "notebookType == 'prompter-notebook'",
+          "command": "prompter.cell.modifyTag",
+          "when": "notebookType == 'prompter-notebook' && notebookCellType == 'code'",
           "group": "inline@6"
         }
       ]
