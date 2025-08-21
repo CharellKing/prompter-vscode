@@ -24,9 +24,10 @@ class PromptHistoryManager {
         const history = metadata.history || [];
         
         return history.map((item: any) => ({
+            id: item.id || '',
             content: item.content || '',
             timestamp: item.timestamp || new Date().toISOString(),
-            md5: item.md5 || ''
+            md5: item.md5 || '',
         }));
     }
 

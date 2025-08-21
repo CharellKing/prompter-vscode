@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { PrompterNotebookProvider } from './notebookProvider';
 import { CellExecutor } from './cellExecutor';
 import { LLMConfigWebviewProvider } from './configWebview';
+import { FilterWebviewProvider } from './filterWebview';
 import { 
     PrompterCellKind,
     getCurrentLLMDisplayName,
@@ -16,7 +17,9 @@ import {
     registerSaveNotebookCommand,
     registerSetCellTypeCommand,
     registerOpenLLMConfigCommand,
-    registerSetDefaultCodeLanguageCommand
+    registerSetDefaultCodeLanguageCommand,
+    registerModifyTagCommand,
+    registerToggleFilterPanelCommand
 } from './commands';
 import {
     createNotebookController,
@@ -28,6 +31,9 @@ export let cellExecutor: CellExecutor;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
+    
+    // Activate the renderer for displaying tags
+    require('./renderer').activate(context);
 
     // Register language configuration
     context.subscriptions.push(
@@ -61,11 +67,18 @@ export function activate(context: vscode.ExtensionContext) {
     // Create LLM configuration webview provider
     const llmConfigProvider = new LLMConfigWebviewProvider(context);
     
-    // Register webview view provider
+    // Create filter webview provider
+    const filterProvider = new FilterWebviewProvider(context);
+    
+    // Register webview view providers
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
             LLMConfigWebviewProvider.viewType,
             llmConfigProvider
+        ),
+        vscode.window.registerWebviewViewProvider(
+            FilterWebviewProvider.viewType,
+            filterProvider
         )
     );
 
@@ -120,6 +133,8 @@ export function activate(context: vscode.ExtensionContext) {
     registerSetDefaultCodeLanguageCommand(context);
     registerSetCellTypeCommand(context);
     registerPromptHistoryCommands(context);
+    registerModifyTagCommand(context);
+    registerToggleFilterPanelCommand(context, filterProvider);
 
     // Register status bar item to display current LLM model
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);

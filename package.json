@@ -124,6 +124,12 @@
     },
     "commands": [
       {
+        "command": "prompter.notebook.toggleFilterPanel",
+        "title": "Filter Prompts",
+        "category": "Prompter",
+        "icon": "$(filter)"
+      },
+      {
         "command": "prompter.cell.insertPromptCellAbove",
         "title": "Insert Prompt Cell Above",
         "category": "Prompter",
@@ -196,6 +202,12 @@
         "title": "Show Prompt History",
         "category": "Prompter",
         "icon": "$(history)"
+      },
+      {
+        "command": "prompter.cell.modifyTag",
+        "title": "Modify Tags",
+        "category": "Prompter",
+        "icon": "$(tag)"
       }
     ],
     "languages": [
@@ -264,6 +276,13 @@
           "title": "Prompter",
           "icon": "$(sparkle)"
         }
+      ],
+      "activitybar": [
+        {
+          "id": "prompter-filter",
+          "title": "Prompt Filter",
+          "icon": "$(filter)"
+        }
       ]
     },
     "views": {
@@ -274,8 +293,22 @@
           "type": "webview",
           "icon": "$(sparkle)"
         }
+      ],
+      "prompter-filter": [
+        {
+          "id": "prompter.filterView",
+          "name": "Prompter Filter",
+          "type": "webview",
+          "icon": "$(filter)"
+        }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "explorer",
+        "contents": "No filter results available."
+      }
+    ],
     "menus": {
       "editor/context": [
         {
@@ -285,6 +318,11 @@
         }
       ],
       "notebook/toolbar": [
+        {
+          "command": "prompter.notebook.toggleFilterPanel",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "navigation@1"
+        },
         {
           "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
@@ -316,6 +354,11 @@
           "command": "prompter.notebook.setCellType",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@5"
+        },
+        {
+          "command": "prompter.cell.modifyTag",
+          "when": "notebookType == 'prompter-notebook' && notebookCellType == 'code'",
+          "group": "inline@6"
         }
       ]
     }

@@ -1,0 +1,69 @@
+/* Styles for the filter webview */
+body {
+    padding: 0;
+    margin: 0;
+    font-family: var(--vscode-font-family);
+    color: var(--vscode-foreground);
+}
+
+.container {
+    padding: 10px;
+}
+
+.tags-container {
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+    padding-bottom: 10px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 3px;
+    border-radius: 3px;
+    background-color: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+    cursor: pointer;
+}
+
+.tag.selected {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.prompt-list {
+    margin-top: 10px;
+}
+
+.prompt-item {
+    padding: 8px;
+    margin-bottom: 5px;
+    border-radius: 3px;
+    background-color: var(--vscode-editor-background);
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.prompt-item:hover {
+    border-color: var(--vscode-focusBorder);
+}
+
+.prompt-tags {
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: var(--vscode-descriptionForeground);
+}
+
+.prompt-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: normal;
+    font-size: 1em;
+    color: var(--vscode-descriptionForeground);
+}
