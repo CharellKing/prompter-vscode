@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 export class FilterWebviewProvider implements vscode.WebviewViewProvider {
-    public static readonly viewType = 'prompter.filterView';
+    public static readonly viewType = 'prompter.view.filterView';
     private _view?: vscode.WebviewView;
     private _extensionUri: vscode.Uri;
     private _allTags: Set<string> = new Set();

@@ -279,9 +279,9 @@
       ],
       "activitybar": [
         {
-          "id": "prompter-filter",
-          "title": "Prompt Filter",
-          "icon": "$(filter)"
+          "id": "prompter-activitybar",
+          "title": "Prompter",
+          "icon": "$(book)"
         }
       ]
     },
@@ -294,10 +294,10 @@
           "icon": "$(sparkle)"
         }
       ],
-      "prompter-filter": [
+      "prompter-activitybar": [
         {
-          "id": "prompter.filterView",
-          "name": "Prompter Filter",
+          "id": "prompter.view.filterView",
+          "name": "Prompter",
           "type": "webview",
           "icon": "$(filter)"
         }
