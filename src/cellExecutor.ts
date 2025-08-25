@@ -8,34 +8,7 @@ import crypto, { randomUUID } from 'crypto';
 import {  executeCellPrompt, PromptCellChatResponse } from './llm';
 import { WrapChatResponse } from './llm/run';
 
-// Define custom cell kinds (must match the enum in extension.ts)
-export const enum PrompterCellKind {
-    Prompt = 'prompt',
-    Output = 'output',
-    Error = 'error'
-}
 
-// Define types for axios error handling
-interface AxiosError {
-    response?: {
-        status: number;
-        data: any;
-    };
-}
-
-// Define types for ChatGPT API response
-interface ChatGPTResponse {
-    choices: Array<{
-        message: {
-            content: string;
-        };
-    }>;
-}
-
-// Type guard for axios errors
-function isAxiosError(error: unknown): error is AxiosError {
-    return typeof error === 'object' && error !== null && 'response' in error;
-}
 
 export class CellExecutor {
     private outputChannel: vscode.OutputChannel;
