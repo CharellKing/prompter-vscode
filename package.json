@@ -208,6 +208,12 @@
         "title": "Modify Tags",
         "category": "Prompter",
         "icon": "$(tag)"
+      },
+      {
+        "command": "prompter.cell.enhanceCell",
+        "title": "Enhance Cell Content",
+        "category": "Prompter",
+        "icon": "$(sparkle)"
       }
     ],
     "languages": [
@@ -321,7 +327,7 @@
         {
           "command": "prompter.notebook.toggleFilterPanel",
           "when": "notebookType == 'prompter-notebook'",
-          "group": "navigation@1"
+          "group": "navigation/filter@-1"
         },
         {
           "command": "prompter.cell.insertPromptCellBelow",
@@ -331,24 +337,29 @@
       ],
       "notebook/cell/title": [
         {
-          "command": "prompter.cell.insertPromptCellBelow",
+          "command": "prompter.cell.enhanceCell",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@1"
         },
         {
-          "command": "prompter.cell.insertCodeCellBelow",
+          "command": "prompter.cell.insertPromptCellBelow",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@2"
         },
         {
-          "command": "notebook.cell.insertMarkdownCellBelow",
+          "command": "prompter.cell.insertCodeCellBelow",
           "when": "notebookType == 'prompter-notebook'",
           "group": "inline@3"
         },
         {
+          "command": "notebook.cell.insertMarkdownCellBelow",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "inline@4"
+        },
+        {
           "command": "prompter.cell.showPromptHistory",
           "when": "notebookType == 'prompter-notebook' && notebookCellType == 'code'",
-          "group": "inline@4"
+          "group": "inline@5"
         },
         {
           "command": "prompter.notebook.setCellType",
@@ -372,13 +383,16 @@
     "@types/axios": "^0.9.36",
     "@types/form-data": "^2.2.1",
     "@types/node": "16.x",
+    "@types/string-format": "^2.0.3",
     "@types/vscode": "^1.74.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
     "axios": "^1.11.0",
+    "string-format": "^2.0.0",
     "typechat": "^0.1.1",
     "uuid": "^11.1.0"
   }
