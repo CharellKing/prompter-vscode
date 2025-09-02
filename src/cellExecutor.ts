@@ -5,37 +5,10 @@ import * as fs from 'fs';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import crypto, { randomUUID } from 'crypto';
-import {  executeCellPrompt, PromptCellChatResponse } from './llm';
+import {  executeCellPrompt, PromptCellChatResponse, promptCellChatResponseSchema } from './llm';
 import { WrapChatResponse } from './llm/run';
 
-// Define custom cell kinds (must match the enum in extension.ts)
-export const enum PrompterCellKind {
-    Prompt = 'prompt',
-    Output = 'output',
-    Error = 'error'
-}
 
-// Define types for axios error handling
-interface AxiosError {
-    response?: {
-        status: number;
-        data: any;
-    };
-}
-
-// Define types for ChatGPT API response
-interface ChatGPTResponse {
-    choices: Array<{
-        message: {
-            content: string;
-        };
-    }>;
-}
-
-// Type guard for axios errors
-function isAxiosError(error: unknown): error is AxiosError {
-    return typeof error === 'object' && error !== null && 'response' in error;
-}
 
 export class CellExecutor {
     private outputChannel: vscode.OutputChannel;
@@ -166,8 +139,13 @@ export class CellExecutor {
             if (language === 'prompt') {
                 console.log('Calling LLM API for prompt cell');
                 // Update execution history and count
-                const chatResponse = await executeCellPrompt(code);
-                await this.updateCellOutputWithTypeChat(cell, code, chatResponse);
+                const chatResponse = await executeCellPrompt({
+                    Prompt: code, 
+                    Schema: promptCellChatResponseSchema,
+                    TypeName: "PromptCellChatResponse",
+                });
+                // 类型断言确保 chatResponse 符合 WrapChatResponse<PromptCellChatResponse> 类型
+                await this.updateCellOutputWithTypeChat(cell, code, chatResponse as WrapChatResponse<PromptCellChatResponse>);
             } else {
                 // Execute code for other languages
                 console.log(`Running code for language: ${language}`);

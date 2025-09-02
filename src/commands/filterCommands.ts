@@ -5,10 +5,10 @@ import { FilterWebviewProvider } from '../filterWebview';
 export function registerToggleFilterPanelCommand(context: vscode.ExtensionContext, filterProvider: FilterWebviewProvider) {
     const command = vscode.commands.registerCommand('prompter.notebook.toggleFilterPanel', async () => {
         // Show the filter view in the activity bar
-        await vscode.commands.executeCommand('workbench.view.extension.prompter-filter');
+        await vscode.commands.executeCommand('workbench.view.extension.prompter-activitybar');
         
         // Focus on the filter view
-        await vscode.commands.executeCommand('prompter.filterView.focus');
+        await vscode.commands.executeCommand('prompter.view.filterView.focus');
         
         // Refresh the filter view with current notebook data
         await filterProvider.refreshFilterView();

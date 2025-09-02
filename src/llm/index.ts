@@ -1,2 +1,2 @@
 export { executeCellPrompt } from './run';
-export { PromptCellChatResponse } from './schema';
+export { PromptCellChatResponse, promptCellChatResponseSchema, EnhanceCellChatResponse, enhanceCellChatResponseSchema } from './schema';

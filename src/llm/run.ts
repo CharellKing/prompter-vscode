@@ -10,6 +10,7 @@ import { createJsonTranslator } from "typechat";
 import { createTypeScriptJsonValidator } from "typechat/ts";
 
 import { OrgConfig } from "./model";
+import { ChatExecuteParam } from "./schema/callCellPrompt";
 
 
 export interface WrapChatResponse<T> {
@@ -24,7 +25,7 @@ export interface WrapChatResponse<T> {
 }
 
 
-export async function executeCellPrompt(prompt: string): Promise<WrapChatResponse<PromptCellChatResponse>> {
+export async function executeCellPrompt<T extends object>(chatExecuteParam: ChatExecuteParam): Promise<WrapChatResponse<T>> {
     const startTime = new Date();
     const vscodeConfig = vscode.workspace.getConfiguration('prompter');
     const org = vscodeConfig.get<string>('llmProvider') || 'openai';
@@ -42,19 +43,10 @@ export async function executeCellPrompt(prompt: string): Promise<WrapChatRespons
 
     const model = createModel(org, modelName, endpoint, apiKey, defaultParams);
     
-    // Define the schema content inline to avoid file reading issues
-    const schemaContent = `
-export interface PromptCellChatResponse {
-    format: "plaintext" | "markdown"; // the best diplay method for response content.
-    tags?: string[]; // Tags should have a range of [0, 3] elements. Each tag should be displayed using only one word, and the tags must have strong relevance and summarization capability in relation to the response. The most relevant tag should be placed first.
-    response: string; // the request's reponse.
-}
-    `;
-    
-    const validator = createTypeScriptJsonValidator<PromptCellChatResponse>(schemaContent, "PromptCellChatResponse");
+    const validator = createTypeScriptJsonValidator<T>(chatExecuteParam.Schema, chatExecuteParam.TypeName);
 
     const translator = createJsonTranslator(model, validator);
-    const result = await translator.translate(prompt);
+    const result = await translator.translate(chatExecuteParam.Prompt);
     
     if (!result.success) {
         throw new Error(`Failed to translate prompt: ${result.message}`);

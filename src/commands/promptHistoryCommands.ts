@@ -678,10 +678,10 @@ export function registerPromptHistoryCommands(context: vscode.ExtensionContext) 
             }
 
             const cell = activeEditor.notebook.cellAt(selection.start);
-            if (cell.kind !== vscode.NotebookCellKind.Code || cell.document.languageId !== 'prompt') {
-                vscode.window.showErrorMessage('This command is only available for prompt cells');
-                return;
-            }
+            // if (cell.kind !== vscode.NotebookCellKind.Code || cell.document.languageId !== 'prompt') {
+            //     vscode.window.showErrorMessage('This command is only available for prompt cells');
+            //     return;
+            // }
 
             historyManager.showHistoryPanel(cell);
         }
