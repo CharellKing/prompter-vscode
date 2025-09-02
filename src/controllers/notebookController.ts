@@ -12,7 +12,7 @@ function getKernelLabel(): string {
     const currentKernel = kernelManager.getCurrentKernel();
     
     if (currentKernel) {
-        return `${currentKernel.type === 'python' ? 'Python' : 'Node.js'} ${currentKernel.version}`;
+        return currentKernel.version;
     }
     
     return 'Multi-Language Kernel';
@@ -44,6 +44,19 @@ export function createNotebookController(
     
     controller.supportsExecutionOrder = true;
     controller.description = 'Click to select kernel';
+    
+    // 添加kernel选择处理器
+    const kernelManager = KernelManager.getInstance();
+    
+    // 当点击右上角的kernel按钮时触发kernel选择
+    controller.interruptHandler = async (notebook) => {
+        await kernelManager.selectKernel();
+    };
+    
+    // 监听kernel变化并更新controller标签
+    kernelManager.onKernelChanged(() => {
+        updateControllerLabel(controller);
+    });
     
     // 设置执行处理器
     controller.executeHandler = async (cells, notebook, controller) => {
