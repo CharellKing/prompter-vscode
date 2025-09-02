@@ -155,10 +155,10 @@ export async function activate(context: vscode.ExtensionContext) {
     registerModifyTagCommand(context);
     registerToggleFilterPanelCommand(context, filterProvider);
     registerEnhanceCellCommand(context);
-    // 注册书签相关命令，传入bookmarkProvider实例
+    // Register bookmark-related commands, pass bookmarkProvider instance
     registerToggleBookmarkCommand(context, bookmarkProvider);
     registerToggleBookmarkPanelCommand(context, bookmarkProvider);
-    // 注册kernel相关命令
+    // Register kernel-related commands
     registerSelectKernelCommand(context);
     registerRefreshKernelsCommand(context);
 
@@ -190,7 +190,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const kernelManager = KernelManager.getInstance();
             kernelStatusBarItem.text = kernelManager.getStatusBarText();
             kernelStatusBarItem.command = 'prompter.selectKernel';
-            kernelStatusBarItem.tooltip = '点击选择执行环境';
+            kernelStatusBarItem.tooltip = 'Click to select execution environment';
             kernelStatusBarItem.show();
         } else {
             kernelStatusBarItem.hide();

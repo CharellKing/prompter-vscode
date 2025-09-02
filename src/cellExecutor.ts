@@ -147,7 +147,7 @@ export class CellExecutor {
                     Schema: promptCellChatResponseSchema,
                     TypeName: "PromptCellChatResponse",
                 });
-                // 类型断言确保 chatResponse 符合 WrapChatResponse<PromptCellChatResponse> 类型
+                // Type assertion to ensure chatResponse conforms to WrapChatResponse<PromptCellChatResponse> type
                 await this.updateCellOutputWithTypeChat(cell, code, chatResponse as WrapChatResponse<PromptCellChatResponse>);
             } else {
                 // Execute code for other languages
@@ -189,7 +189,7 @@ export class CellExecutor {
             
             // Create a new error output cell
             const errorCell = new vscode.NotebookCellData(
-                vscode.NotebookCellKind.Markup, // 使用Markup类型以便更好地显示错误
+                vscode.NotebookCellKind.Markup, // Use Markup type for better error display
                 `## ❌ Error\n\n\`\`\`\n${errorMessage}\n\`\`\``,
                 'markdown'
             );
@@ -199,8 +199,8 @@ export class CellExecutor {
                 ...errorCell.metadata,
                 hasError: true,
                 sourceCell: currentIndex,
-                editable: false,  // 设置为不可编辑
-                runnable: false   // 设置为不可运行
+                editable: false,  // Set as non-editable
+                runnable: false   // Set as non-runnable
             };
             
             // Ensure error cell is inserted after the source cell (at index + 1)

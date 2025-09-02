@@ -9,7 +9,7 @@ export class KernelManager {
     public readonly onKernelChanged = this.onKernelChangedEmitter.event;
 
     private constructor() {
-        // 不创建自己的状态栏项目，而是使用extension.ts中的统一状态栏
+        // Don't create own status bar item, use the unified status bar in extension.ts
     }
 
     public static getInstance(): KernelManager {
@@ -31,7 +31,7 @@ export class KernelManager {
 
     private autoSelectDefaultKernel(): void {
         if (this.availableKernels.length > 0) {
-            // 优先选择Python环境，如果没有则选择Node.js环境
+            // Prefer Python environment, if not available then select Node.js environment
             const pythonEnv = this.availableKernels.find(env => env.type === 'python');
             const nodeEnv = this.availableKernels.find(env => env.type === 'nodejs');
             
@@ -42,7 +42,7 @@ export class KernelManager {
 
     public async selectKernel(): Promise<void> {
         if (this.availableKernels.length === 0) {
-            vscode.window.showWarningMessage('未检测到可用的执行环境');
+            vscode.window.showWarningMessage('No available execution environments detected');
             return;
         }
 
@@ -53,12 +53,12 @@ export class KernelManager {
         const items: KernelQuickPickItem[] = this.availableKernels.map(env => ({
             label: env.displayName,
             description: env.path,
-            detail: `类型: ${env.type === 'python' ? 'Python' : 'Node.js'}`,
+            detail: `Type: ${env.type === 'python' ? 'Python' : 'Node.js'}`,
             env: env
         }));
 
         const selected = await vscode.window.showQuickPick(items, {
-            placeHolder: '选择执行环境',
+            placeHolder: 'Select execution environment',
             matchOnDescription: true,
             matchOnDetail: true
         });
@@ -66,7 +66,7 @@ export class KernelManager {
         if (selected) {
             this.currentKernel = selected.env;
             this.onKernelChangedEmitter.fire(this.currentKernel);
-            vscode.window.showInformationMessage(`已切换到: ${selected.env.displayName}`);
+            vscode.window.showInformationMessage(`Switched to: ${selected.env.displayName}`);
         }
     }
 
@@ -79,13 +79,13 @@ export class KernelManager {
             return null;
         }
 
-        // 如果当前kernel类型匹配语言，直接返回
+        // If current kernel type matches language, return directly
         if ((language === 'python' && this.currentKernel.type === 'python') ||
             (language === 'javascript' && this.currentKernel.type === 'nodejs')) {
             return this.currentKernel;
         }
 
-        // 否则查找匹配的环境
+        // Otherwise find matching environment
         const targetType = language === 'python' ? 'python' : 'nodejs';
         return this.availableKernels.find(env => env.type === targetType) || null;
     }
@@ -94,19 +94,19 @@ export class KernelManager {
         if (this.currentKernel) {
             return `$(server-environment) ${this.currentKernel.type === 'python' ? 'Python' : 'Node.js'}: ${this.currentKernel.version}`;
         } else {
-            return '$(server-environment) 未选择环境';
+            return '$(server-environment) No environment selected';
         }
     }
 
     public async refreshKernels(): Promise<void> {
         await this.detectKernels();
         
-        // 如果当前kernel不在新的列表中，重新选择
+        // If current kernel is not in the new list, reselect
         if (this.currentKernel && !this.availableKernels.some(env => env.path === this.currentKernel!.path)) {
             this.autoSelectDefaultKernel();
         }
         
-        // 触发状态栏更新事件
+        // Trigger status bar update event
         this.onKernelChangedEmitter.fire(this.currentKernel);
     }
 

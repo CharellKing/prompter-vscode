@@ -14,7 +14,7 @@ export function registerRefreshKernelsCommand(context: vscode.ExtensionContext) 
     const command = vscode.commands.registerCommand('prompter.refreshKernels', async () => {
         const kernelManager = KernelManager.getInstance();
         await kernelManager.refreshKernels();
-        vscode.window.showInformationMessage('已刷新执行环境列表');
+        vscode.window.showInformationMessage('Execution environment list refreshed');
     });
     
     context.subscriptions.push(command);

@@ -56,7 +56,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     await this._updateBookmarkTitle(message.bookmarkId, message.title);
                     break;
                 case 'requestBookmarks':
-                    // 当WebView请求书签数据时，立即更新书签视图
+                    // When WebView requests bookmark data, immediately update bookmark view
                     await this._updateBookmarkView();
                     break;
             }
@@ -335,13 +335,13 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
         (function() {
             const vscode = acquireVsCodeApi();
             
-            // 尝试恢复之前的状态
+            // Try to restore previous state
             let state = vscode.getState() || { bookmarks: [], activeNotebookUri: null, editingBookmarkId: null };
             let bookmarks = state.bookmarks || [];
             let activeNotebookUri = state.activeNotebookUri;
             let editingBookmarkId = state.editingBookmarkId;
 
-            // 监听来自扩展的消息
+            // Listen for messages from extension
             window.addEventListener('message', event => {
                 const message = event.data;
                 switch (message.command) {
@@ -349,7 +349,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         bookmarks = message.bookmarks;
                         activeNotebookUri = message.activeNotebookUri;
                         
-                        // 保存状态
+                        // Save state
                         vscode.setState({ bookmarks, activeNotebookUri, editingBookmarkId });
                         
                         renderBookmarks();
@@ -357,7 +357,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                 }
             });
 
-            // 渲染书签列表
+            // Render bookmark list
             function renderBookmarks() {
                 const bookmarkListElement = document.getElementById('bookmarkList');
                 
@@ -366,7 +366,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                     return;
                 }
 
-                // 按时间戳降序排序
+                // Sort by timestamp in descending order
                 bookmarks.sort((a, b) => b.timestamp - a.timestamp);
 
                 let html = '';
@@ -402,7 +402,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
 
                 bookmarkListElement.innerHTML = html;
 
-                // 添加事件监听器
+                // Add event listeners
                 document.querySelectorAll('.bookmark-title').forEach(el => {
                     el.addEventListener('click', function() {
                         const bookmarkId = this.closest('.bookmark-item').dataset.id;
@@ -428,7 +428,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         const bookmarkItem = this.closest('.bookmark-item');
                         const bookmarkId = bookmarkItem.dataset.id;
                         editingBookmarkId = bookmarkId;
-                        // 保存状态
+                        // Save state
                         vscode.setState({ bookmarks, activeNotebookUri, editingBookmarkId });
                         renderBookmarks();
                     });
@@ -449,7 +449,7 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                         }
                         
                         editingBookmarkId = null;
-                        // 保存状态
+                        // Save state
                         vscode.setState({ bookmarks, activeNotebookUri, editingBookmarkId });
                         renderBookmarks();
                     });
@@ -458,14 +458,14 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
                 document.querySelectorAll('.edit-title-button.cancel').forEach(el => {
                     el.addEventListener('click', function() {
                         editingBookmarkId = null;
-                        // 保存状态
+                        // Save state
                         vscode.setState({ bookmarks, activeNotebookUri, editingBookmarkId });
                         renderBookmarks();
                     });
                 });
             }
 
-            // 初始请求书签数据
+            // Initial request for bookmark data
             vscode.postMessage({ command: 'requestBookmarks' });
         })();
     </script>
@@ -475,17 +475,17 @@ export class BookmarkWebviewProvider implements vscode.WebviewViewProvider {
 }
 
 /**
- * 注册切换书签面板命令
+ * Register toggle bookmark panel command
  */
 export function registerToggleBookmarkPanelCommand(context: vscode.ExtensionContext, bookmarkProvider: BookmarkWebviewProvider) {
     const command = vscode.commands.registerCommand('prompter.notebook.toggleBookmarkPanel', async () => {
-        // 显示书签视图
+        // Show bookmark view
         await vscode.commands.executeCommand('workbench.view.extension.prompter-activitybar');
         
-        // 聚焦书签视图
+        // Focus bookmark view
         await vscode.commands.executeCommand('prompter.view.bookmarkView.focus');
         
-        // 刷新书签视图
+        // Refresh bookmark view
         await bookmarkProvider.refreshBookmarkView();
     });
     

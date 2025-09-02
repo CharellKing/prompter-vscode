@@ -23,7 +23,7 @@ export function registerOpenLLMConfigCommand(context: vscode.ExtensionContext, l
             llmConfigProvider.show();
         } catch (error) {
             console.error('Failed to show LLM config panel:', error);
-            // 如果面板命令失败，回退到显示webview提供者
+            // If panel command fails, fallback to showing webview provider
             llmConfigProvider.show();
         }
     });

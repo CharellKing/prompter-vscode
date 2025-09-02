@@ -6,7 +6,7 @@ import format from 'string-format';
 
 
 /**
- * 注册增强cell内容的命令
+ * Register command to enhance cell content
  */
 export function registerEnhanceCellCommand(context: vscode.ExtensionContext) {
     const command = vscode.commands.registerCommand('prompter.cell.enhanceCell', async (cellUri?: vscode.Uri, cellIndex?: number) => {
@@ -16,7 +16,7 @@ export function registerEnhanceCellCommand(context: vscode.ExtensionContext) {
             return;
         }
 
-        // 获取当前选中的cell或指定的cell
+        // Get the currently selected cell or specified cell
         let targetCell: vscode.NotebookCell;
         if (typeof cellIndex === 'number') {
             targetCell = editor.notebook.cellAt(cellIndex);
@@ -35,13 +35,13 @@ export function registerEnhanceCellCommand(context: vscode.ExtensionContext) {
             return;
         }
 
-        // 根据cell类型生成不同的增强提示
+        // Generate different enhancement prompts based on cell type
         let enhancePrompt: string;
         const languageId = targetCell.document.languageId;
         let contentType = "plain text"
 
         if (targetCell.kind === vscode.NotebookCellKind.Code) {
-            // 对于代码类型的cell，添加语言标识
+            // For code type cells, add language identification
             if (targetCell.document.languageId === 'prompt') {
                 enhancePrompt = `I need your help to improve the following prompt content. Please optimize according to these requirements:
 
@@ -75,7 +75,7 @@ Please provide an optimized version of the prompt content based on the above req
         }
 
         try {
-            // 显示进度提示
+            // Show progress indicator
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: 'Enhancing cell content...',
@@ -84,7 +84,7 @@ Please provide an optimized version of the prompt content based on the above req
                 progress.report({ increment: 0, message: 'Calling LLM...' });
                 
                 const formattedSchema = format(enhanceCellChatResponseSchema, {contentType: contentType});
-                // 调用LLM服务
+                // Call LLM service
                 const response: WrapChatResponse<EnhanceCellChatResponse> = await executeCellPrompt({
                     Prompt: enhancePrompt,
                     Schema: formattedSchema,
@@ -93,12 +93,12 @@ Please provide an optimized version of the prompt content based on the above req
                 
                 progress.report({ increment: 50, message: 'Processing response...' });
                 
-                // 获取增强后的内容
+                // Get enhanced content
                 let enhancedContent = response.data.response;
                 
                 progress.report({ increment: 80, message: 'Updating cell...' });
                 
-                // 更新cell内容
+                // Update cell content
                 const edit = new vscode.WorkspaceEdit();
                 const cellData = new vscode.NotebookCellData(
                     targetCell.kind,
@@ -106,7 +106,7 @@ Please provide an optimized version of the prompt content based on the above req
                     targetCell.document.languageId
                 );
                 
-                // 保留原有的metadata
+                // Preserve original metadata
                 cellData.metadata = { ...targetCell.metadata };
                                 
                 const nbEdit = vscode.NotebookEdit.replaceCells(

@@ -34,7 +34,7 @@ export function createNotebookController(
         getKernelLabel()
     );
     
-    // 配置支持的语言
+    // Configure supported languages
     controller.supportedLanguages = [
         'prompt', 'javascript', 'typescript', 'python', 'java', 'csharp', 
         'cpp', 'c', 'go', 'rust', 'php', 'ruby', 'swift', 
@@ -45,23 +45,23 @@ export function createNotebookController(
     controller.supportsExecutionOrder = true;
     controller.description = 'Click to select kernel';
     
-    // 添加kernel选择处理器
+    // Add kernel selection handler
     const kernelManager = KernelManager.getInstance();
     
-    // 当点击右上角的kernel按钮时触发kernel选择
+    // Trigger kernel selection when clicking the kernel button in the top right
     controller.interruptHandler = async (notebook) => {
         await kernelManager.selectKernel();
     };
     
-    // 监听kernel变化并更新controller标签
+    // Listen for kernel changes and update controller label
     kernelManager.onKernelChanged(() => {
         updateControllerLabel(controller);
     });
     
-    // 设置执行处理器
+    // Set execution handler
     controller.executeHandler = async (cells, notebook, controller) => {
         for (const cell of cells) {
-            // 创建执行对象
+            // Create execution object
             const execution = controller.createNotebookCellExecution(cell);
             execution.start(Date.now());
             

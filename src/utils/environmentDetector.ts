@@ -29,10 +29,10 @@ export class EnvironmentDetector {
     public async detectEnvironments(): Promise<Environment[]> {
         this.environments = [];
         
-        // 检测Python环境
+        // Detect Python environments
         await this.detectPythonEnvironments();
         
-        // 检测Node.js环境
+        // Detect Node.js environments
         await this.detectNodejsEnvironments();
         
         return this.environments;
@@ -61,14 +61,14 @@ export class EnvironmentDetector {
                     }
                 }
             } catch (error) {
-                // 忽略错误，继续检测其他环境
+                // Ignore errors, continue detecting other environments
             }
         }
 
-        // 检测conda环境
+        // Detect conda environments
         await this.detectCondaEnvironments();
         
-        // 检测虚拟环境
+        // Detect virtual environments
         await this.detectVirtualEnvironments();
     }
 
@@ -98,19 +98,19 @@ export class EnvironmentDetector {
                                     displayName: `${version} - Conda (${envName})`
                                 });
                             } catch (error) {
-                                // 忽略无效的环境
+                                // Ignore invalid environments
                             }
                         }
                     }
                 }
             }
         } catch (error) {
-            // conda不可用
+            // conda not available
         }
     }
 
     private async detectVirtualEnvironments(): Promise<void> {
-        // 检测常见的虚拟环境位置
+        // Detect common virtual environment locations
         const commonVenvPaths = [
             path.join(process.env.HOME || process.env.USERPROFILE || '', '.virtualenvs'),
             path.join(process.cwd(), 'venv'),
@@ -131,7 +131,7 @@ export class EnvironmentDetector {
                     displayName: `${version} - Virtual Env (${path.basename(venvDir)})`
                 });
             } catch (error) {
-                // 虚拟环境不存在或无效
+                // Virtual environment does not exist or is invalid
             }
         }
     }
@@ -159,11 +159,11 @@ export class EnvironmentDetector {
                     }
                 }
             } catch (error) {
-                // 忽略错误
+                // Ignore errors
             }
         }
 
-        // 检测nvm环境
+        // Detect nvm environments
         await this.detectNvmEnvironments();
     }
 
@@ -180,7 +180,7 @@ export class EnvironmentDetector {
                     const nvmHome = process.env.NVM_HOME || path.join(process.env.APPDATA || '', 'nvm');
                     const nodePath = path.resolve(nvmHome, `v${version}`, 'node.exe');
                     
-                    // 验证文件是否存在
+                    // Verify if file exists
                     try {
                         await fs.promises.access(nodePath);
                         this.environments.push({
@@ -190,12 +190,12 @@ export class EnvironmentDetector {
                             displayName: `Node.js v${version} - NVM`
                         });
                     } catch (accessError) {
-                        // 文件不存在，跳过这个版本
+                        // File does not exist, skip this version
                     }
                 }
             }
         } catch (error) {
-            // nvm不可用或在Unix系统上
+            // nvm not available or on Unix system
             try {
                 // Unix nvm
                 const { stdout } = await execAsync('bash -c "source ~/.nvm/nvm.sh && nvm list"');
@@ -207,7 +207,7 @@ export class EnvironmentDetector {
                         const version = match[1];
                         const nvmPath = path.resolve(process.env.HOME || '', '.nvm', 'versions', 'node', `v${version}`, 'bin', 'node');
                         
-                        // 验证文件是否存在
+                        // Verify if file exists
                         try {
                             await fs.promises.access(nvmPath);
                             this.environments.push({
@@ -217,12 +217,12 @@ export class EnvironmentDetector {
                                 displayName: `Node.js v${version} - NVM`
                             });
                         } catch (accessError) {
-                            // 文件不存在，跳过这个版本
+                            // File does not exist, skip this version
                         }
                     }
                 }
             } catch (unixError) {
-                // nvm不可用
+                // nvm not available
             }
         }
     }
