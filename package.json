@@ -226,6 +226,18 @@
         "title": "Enhance Cell Content",
         "category": "Prompter",
         "icon": "$(sparkle)"
+      },
+      {
+        "command": "prompter.selectKernel",
+        "title": "Select Execution Environment",
+        "category": "Prompter",
+        "icon": "$(server-environment)"
+      },
+      {
+        "command": "prompter.refreshKernels",
+        "title": "Refresh Execution Environments",
+        "category": "Prompter",
+        "icon": "$(refresh)"
       }
     ],
     "languages": [

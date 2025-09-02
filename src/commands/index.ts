@@ -9,4 +9,5 @@ export * from './tagCommands';
 export * from './filterCommands';
 export * from './enhanceCellCommands';
 export * from './bookmarkCommands';
+export * from './kernelCommands';
 

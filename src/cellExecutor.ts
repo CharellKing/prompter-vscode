@@ -7,12 +7,14 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto, { randomUUID } from 'crypto';
 import {  executeCellPrompt, PromptCellChatResponse, promptCellChatResponseSchema } from './llm';
 import { WrapChatResponse } from './llm/run';
+import { KernelManager } from './controllers/kernelManager';
 
 
 
 export class CellExecutor {
     private outputChannel: vscode.OutputChannel;
     private tempDir: string;
+    private kernelManager: KernelManager;
 
     /**
      * Updates cell properties based on language mode
@@ -46,6 +48,7 @@ export class CellExecutor {
     constructor(private context: vscode.ExtensionContext) {
         this.outputChannel = vscode.window.createOutputChannel('Prompter Output');
         this.tempDir = path.join(context.globalStorageUri?.fsPath || '', 'temp');
+        this.kernelManager = KernelManager.getInstance();
         
         // Ensure temporary directory exists
         if (!fs.existsSync(this.tempDir)) {
@@ -239,16 +242,27 @@ export class CellExecutor {
             let args: string[];
             let tempFile: string;
 
+            // Get the appropriate environment for the language
+            const environment = this.kernelManager.getKernelForLanguage(language);
+            
             switch (language.toLowerCase()) {
                 case 'javascript':
                 case 'js':
-                    command = 'node';
+                    if (environment && environment.type === 'nodejs') {
+                        command = environment.path;
+                    } else {
+                        command = 'node';
+                    }
                     tempFile = path.join(this.tempDir, `temp_${Date.now()}.js`);
                     args = [tempFile];
                     break;
                 case 'python':
                 case 'py':
-                    command = 'python';
+                    if (environment && environment.type === 'python') {
+                        command = environment.path;
+                    } else {
+                        command = 'python';
+                    }
                     tempFile = path.join(this.tempDir, `temp_${Date.now()}.py`);
                     args = [tempFile];
                     break;

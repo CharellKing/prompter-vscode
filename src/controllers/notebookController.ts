@@ -1,6 +1,22 @@
 import * as vscode from 'vscode';
 import { CellExecutor } from '../cellExecutor';
-import { PrompterCellKind, getCurrentLLMDisplayName } from '../commands';
+import { PrompterCellKind } from '../commands';
+import { KernelManager } from './kernelManager';
+
+/**
+ * Gets the current kernel label for display
+ * @returns The kernel display label
+ */
+function getKernelLabel(): string {
+    const kernelManager = KernelManager.getInstance();
+    const currentKernel = kernelManager.getCurrentKernel();
+    
+    if (currentKernel) {
+        return `${currentKernel.type === 'python' ? 'Python' : 'Node.js'} ${currentKernel.version}`;
+    }
+    
+    return 'Multi-Language Kernel';
+}
 
 /**
  * Creates and configures the notebook controller for the Prompter extension
@@ -12,11 +28,10 @@ export function createNotebookController(
     context: vscode.ExtensionContext,
     cellExecutor: CellExecutor
 ): vscode.NotebookController {
-    // 创建notebook controller来处理prompt cell的语言显示
     const controller = vscode.notebooks.createNotebookController(
         'prompter-controller',
         'prompter-notebook',
-        getCurrentLLMDisplayName()
+        getKernelLabel()
     );
     
     // 配置支持的语言
@@ -28,7 +43,7 @@ export function createNotebookController(
     ];
     
     controller.supportsExecutionOrder = true;
-    controller.description = 'Click to open LLM settings';
+    controller.description = 'Click to select kernel';
     
     // 设置执行处理器
     controller.executeHandler = async (cells, notebook, controller) => {
@@ -63,10 +78,10 @@ export function createNotebookController(
 }
 
 /**
- * Updates the controller label with the current LLM model name
+ * Updates the controller label with the current kernel information
  * @param controller The notebook controller to update
  */
 export function updateControllerLabel(controller: vscode.NotebookController): void {
-    controller.label = getCurrentLLMDisplayName();
-    controller.description = 'Current LLM model for prompt execution';
+    controller.label = getKernelLabel();
+    controller.description = 'Current execution kernel';
 }

@@ -25,7 +25,10 @@ import {
     registerEnhanceCellCommand,
     registerToggleBookmarkCommand,
     registerToggleBookmarkPanelCommand,
+    registerSelectKernelCommand,
+    registerRefreshKernelsCommand,
 } from './commands';
+import { KernelManager } from './controllers/kernelManager';
 import {
     createNotebookController,
     updateControllerLabel
@@ -34,7 +37,7 @@ import {
 // Export the cellExecutor for use in other parts of the extension
 export let cellExecutor: CellExecutor;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     console.log('Prompter extension is now active!');
     
     // Activate the renderer for displaying tags
@@ -65,6 +68,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Create cell executor and export it
     cellExecutor = new CellExecutor(context);
+
+    // Initialize kernel manager
+    const kernelManager = KernelManager.getInstance();
+    await kernelManager.initialize();
 
     // Create and configure notebook controller
     const controller = createNotebookController(context, cellExecutor);
@@ -151,9 +158,12 @@ export function activate(context: vscode.ExtensionContext) {
     // 注册书签相关命令，传入bookmarkProvider实例
     registerToggleBookmarkCommand(context, bookmarkProvider);
     registerToggleBookmarkPanelCommand(context, bookmarkProvider);
+    // 注册kernel相关命令
+    registerSelectKernelCommand(context);
+    registerRefreshKernelsCommand(context);
 
     // Register status bar item to display current LLM model
-    const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
+    const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 102);
     
     function updateLLMStatusBar() {
         const activeEditor = vscode.window.activeTextEditor;
@@ -166,6 +176,24 @@ export function activate(context: vscode.ExtensionContext) {
             llmStatusBarItem.show();
         } else {
             llmStatusBarItem.hide();
+        }
+    }
+
+    // Register status bar item to display current kernel
+    const kernelStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
+    
+    function updateKernelStatusBar() {
+        const activeEditor = vscode.window.activeTextEditor;
+        const shouldShow = activeEditor && activeEditor.document.uri.fsPath.endsWith('.ppnb');
+        
+        if (shouldShow) {
+            const kernelManager = KernelManager.getInstance();
+            kernelStatusBarItem.text = kernelManager.getStatusBarText();
+            kernelStatusBarItem.command = 'prompter.selectKernel';
+            kernelStatusBarItem.tooltip = '点击选择执行环境';
+            kernelStatusBarItem.show();
+        } else {
+            kernelStatusBarItem.hide();
         }
     }
     
@@ -191,13 +219,21 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize status bar
     updateLLMStatusBar();
     updateCodeLanguageStatusBar();
+    updateKernelStatusBar();
     
     // Listen for editor changes to update status bar display
     context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor(() => {
+        vscode.window.onDidChangeActiveTextEditor(async (editor) => {
             updateLLMStatusBar();
             updateCodeLanguageStatusBar();
+            updateKernelStatusBar();
             updateStatusBar();
+            
+            // Auto-detect environments when a .ppnb file becomes active
+            if (editor && editor.document.uri.fsPath.endsWith('.ppnb')) {
+                const kernelManager = KernelManager.getInstance();
+                await kernelManager.refreshKernels();
+            }
         })
     );
     
@@ -215,7 +251,15 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
     
-    context.subscriptions.push(llmStatusBarItem, codeLanguageStatusBarItem);
+    // Listen for kernel changes to update status bar and controller
+    context.subscriptions.push(
+        kernelManager.onKernelChanged(() => {
+            updateKernelStatusBar();
+            updateControllerLabel(controller);
+        })
+    );
+
+    context.subscriptions.push(llmStatusBarItem, codeLanguageStatusBarItem, kernelStatusBarItem);
 
     // Register status bar item
     const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
