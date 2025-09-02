@@ -124,6 +124,18 @@
     },
     "commands": [
       {
+        "command": "prompter.notebook.toggleBookmarkPanel",
+        "title": "Show Bookmarks",
+        "category": "Prompter",
+        "icon": "$(bookmark)"
+      },
+      {
+        "command": "prompter.cell.toggleBookmark",
+        "title": "Toggle Bookmark",
+        "category": "Prompter",
+        "icon": "$(bookmark)"
+      },
+      {
         "command": "prompter.notebook.toggleFilterPanel",
         "title": "Filter Prompts",
         "category": "Prompter",
@@ -303,9 +315,15 @@
       "prompter-activitybar": [
         {
           "id": "prompter.view.filterView",
-          "name": "Prompter",
+          "name": "Tags",
           "type": "webview",
           "icon": "$(filter)"
+        },
+        {
+          "id": "prompter.view.bookmarkView",
+          "name": "Bookmarks",
+          "type": "webview",
+          "icon": "$(bookmark)"
         }
       ]
     },
@@ -324,6 +342,11 @@
         }
       ],
       "notebook/toolbar": [
+        {
+          "command": "prompter.notebook.toggleBookmarkPanel",
+          "when": "notebookType == 'prompter-notebook'",
+          "group": "navigation/bookmark@-2"
+        },
         {
           "command": "prompter.notebook.toggleFilterPanel",
           "when": "notebookType == 'prompter-notebook'",

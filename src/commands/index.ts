@@ -8,4 +8,5 @@ export * from './languageCommands';
 export * from './tagCommands';
 export * from './filterCommands';
 export * from './enhanceCellCommands';
+export * from './bookmarkCommands';
 
