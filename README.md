@@ -14,7 +14,6 @@ Prompter is a powerful VSCode extension that brings Jupyter-like notebook functi
 </a>
 </p>
 
-
 ## Features
 
 - 🤖 **Multi-LLM Support**: Connect to OpenAI, Anthropic, Deepseek, Qwen, Gemini, and Mistral
@@ -53,7 +52,6 @@ https://marketplace.visualstudio.com/items?itemName=andyqu.prompter-vscode&ssr=f
 4. Click the prompt button to create prompt cell.
 
 ![Create Prompter Notebook](manual/use-the-prompt-cell.gif)
-
 
 ## Development
 

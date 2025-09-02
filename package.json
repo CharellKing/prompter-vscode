@@ -2,7 +2,7 @@
   "name": "prompter-vscode",
   "displayName": "Prompter - Prompt Runner",
   "description": "A VSCode extension for creating, managing, and executing LLM prompts in a notebook-like interface, similar to Jupyter notebooks",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "andyqu",
   "repository": {
     "type": "git",
