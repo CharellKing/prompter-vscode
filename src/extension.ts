@@ -3,6 +3,8 @@ import { PrompterNotebookProvider } from './notebookProvider';
 import { CellExecutor } from './cellExecutor';
 import { LLMConfigWebviewProvider } from './configWebview';
 import { FilterWebviewProvider } from './filterWebview';
+import { BookmarkWebviewProvider } from './bookmarkWebview';
+import { BookmarkManager } from './bookmarkManager';
 import { 
     PrompterCellKind,
     getCurrentLLMDisplayName,
@@ -21,6 +23,8 @@ import {
     registerModifyTagCommand,
     registerToggleFilterPanelCommand,
     registerEnhanceCellCommand,
+    registerToggleBookmarkCommand,
+    registerToggleBookmarkPanelCommand,
 } from './commands';
 import {
     createNotebookController,
@@ -71,6 +75,9 @@ export function activate(context: vscode.ExtensionContext) {
     // Create filter webview provider
     const filterProvider = new FilterWebviewProvider(context);
     
+    // Create bookmark webview provider
+    const bookmarkProvider = new BookmarkWebviewProvider(context);
+    
     // Register webview view providers
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(
@@ -80,6 +87,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(
             FilterWebviewProvider.viewType,
             filterProvider
+        ),
+        vscode.window.registerWebviewViewProvider(
+            BookmarkWebviewProvider.viewType,
+            bookmarkProvider
         )
     );
 
@@ -137,6 +148,9 @@ export function activate(context: vscode.ExtensionContext) {
     registerModifyTagCommand(context);
     registerToggleFilterPanelCommand(context, filterProvider);
     registerEnhanceCellCommand(context);
+    // 注册书签相关命令，传入bookmarkProvider实例
+    registerToggleBookmarkCommand(context, bookmarkProvider);
+    registerToggleBookmarkPanelCommand(context, bookmarkProvider);
 
     // Register status bar item to display current LLM model
     const llmStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
